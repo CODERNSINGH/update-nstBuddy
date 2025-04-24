@@ -1,0 +1,38 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
+
+const Home: React.FC = () => {
+  return (
+    <Layout>
+      <div className="text-center py-12">
+        <h1 className="text-4xl font-bold text-gray-900 mb-6">Welcome to NST Buddy</h1>
+        <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+          Your companion for coding challenges, assignments, and the 100 Days of Code journey.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <Link
+            to="/assignments"
+            className="bg-purple-600 hover:bg-purple-700 text-white py-6 px-6 rounded-lg shadow-md transition-colors"
+          >
+            <h2 className="text-2xl font-bold mb-2">Complete All Assignments</h2>
+            <p>Browse and solve assignments across various topics</p>
+          </Link>
+
+          <Link
+            to="/assignments"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white py-6 px-6 rounded-lg shadow-md transition-colors"
+          >
+            <h2 className="text-2xl font-bold mb-2">Complete 100 Days of Code</h2>
+            <p>Track your progress through the 100 days challenge</p>
+          </Link>
+
+          
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default Home;
