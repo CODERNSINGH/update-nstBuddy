@@ -16,16 +16,16 @@ const Home: React.FC = () => {
             to="/assignments"
             className="bg-purple-600 hover:bg-purple-700 text-white py-6 px-6 rounded-lg shadow-md transition-colors"
           >
-            <h2 className="text-2xl font-bold mb-2">Complete All Assignments</h2>
-            <p>Browse and solve assignments across various topics</p>
+            <h2 className="text-2xl font-bold mb-2">Complete All Sem-2 Assignments</h2>
+            <p>Just Search and Open</p>
           </Link>
 
           <Link
             to="/assignments"
             className="bg-indigo-600 hover:bg-indigo-700 text-white py-6 px-6 rounded-lg shadow-md transition-colors"
           >
-            <h2 className="text-2xl font-bold mb-2">Complete 100 Days of Code</h2>
-            <p>Track your progress through the 100 days challenge</p>
+            <h2 className="text-2xl font-bold mb-2">Complete All Sem-3 Assignments </h2>
+            <p>Just Search and Open</p>
           </Link>
 
           
