@@ -6,6 +6,7 @@ import Assignments from './pages/Assignments';
 import Days100 from './pages/Days100';
 import ReactGA from 'react-ga4';
 import usePageTracking from './hooks/usePageTracking';
+import AssigenmentSem2 from './pages/AssigenmentSem2';
 
 // Initialize Google Analytics
 ReactGA.initialize('G-P95H63YPVW');
@@ -17,6 +18,7 @@ const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/assignments" element={<Assignments />} />
+      <Route path="/assignmentsSem3" element={<AssigenmentSem2/>} />
       <Route path="/100days" element={<Days100 />} />
       <Route path="*" element={<Home />} />
     </Routes>

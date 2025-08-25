@@ -7,13 +7,6 @@ const API_KEY = 'AIzaSyCuNpDisrzPeXJ5fkYdrshKgfX6dIgmlaA';
 
 // Enum for available sheet names
 export enum SheetName {
-  DAYS_100 = '100-Days-of-code',
-  DSA = 'DSA',
-  DSA_LAB = 'DSA-Lab',
-  MATHS = 'Maths',
-  MATHS_LAB = 'Maths-Lab',
-  WAP = 'WAP',
-  WAP_LAB = 'WAP-Lab',
   DBMS_LAB = 'DBMS-Lab',
   DBMS = "DBMS",
   AP = "AP",
@@ -31,7 +24,7 @@ const buildRange = (sheetName: string): string => {
 
 // Fetch assignments from a specific sheet
 export const fetchAssignments = async (
-  sheetName: string = SheetName.DAYS_100
+  sheetName: string
 ): Promise<Assignment[]> => {
   const range = buildRange(sheetName);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
@@ -68,7 +61,7 @@ export const fetchAssignments = async (
 };
 
 // Fetch assignments from multiple sheets and combine them
-export const fetchAllAssignments = async (): Promise<Assignment[]> => {
+export const fetchAllAssignmentsSem2 = async (): Promise<Assignment[]> => {
   try {
     const sheetNames = Object.values(SheetName);
     const promises = sheetNames.map(sheet => fetchAssignments(sheet));

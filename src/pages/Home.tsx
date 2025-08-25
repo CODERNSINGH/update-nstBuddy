@@ -21,7 +21,7 @@ const Home: React.FC = () => {
           </Link>
 
           <Link
-            to="/assignments"
+            to="/assignmentsSem3"
             className="bg-indigo-600 hover:bg-indigo-700 text-white py-6 px-6 rounded-lg shadow-md transition-colors"
           >
             <h2 className="text-2xl font-bold mb-2">Complete All Sem-3 Assignments </h2>
