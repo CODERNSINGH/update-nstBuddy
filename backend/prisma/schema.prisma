@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id           String   @id @default(cuid())
+  questionName String
+  subject      String
+  topic        String
+  link         String
+  semester     Int      @default(4)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([semester])
+  @@index([subject])
+  @@index([topic])
+}
+
+model Notice {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  priority  String    @default("normal") // low, normal, high
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
+
+  @@index([isActive])
+  @@index([priority])
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  uniqueKey String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
