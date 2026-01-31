@@ -42,6 +42,7 @@ export interface Admin {
   id: string;
   email: string;
   name: string;
+  createdAt: string;
 }
 
 export interface AuthResponse {

@@ -5,6 +5,7 @@ import AssignmentCard from '../components/assignments/AssignmentCard';
 import AssignmentDetail from '../components/assignments/AssignmentDetail';
 import SearchBar from '../components/assignments/SearchBar';
 import SubjectFilter from '../components/assignments/SubjectFilter';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { questionsApi } from '../services/api';
 import { Question } from '../types';
 
@@ -16,6 +17,7 @@ const AssignmentsSem4: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showRenderMessage, setShowRenderMessage] = useState(false);
 
     useEffect(() => {
         fetchQuestions();
@@ -23,6 +25,12 @@ const AssignmentsSem4: React.FC = () => {
 
     const fetchQuestions = async () => {
         setLoading(true);
+
+        // Show Render message after 3 seconds of loading
+        const renderMessageTimer = setTimeout(() => {
+            setShowRenderMessage(true);
+        }, 3000);
+
         try {
             const data = await questionsApi.getAll({ semester: 4 });
             setQuestions(data);
@@ -34,7 +42,9 @@ const AssignmentsSem4: React.FC = () => {
         } catch (error) {
             console.error('Error fetching questions:', error);
         } finally {
+            clearTimeout(renderMessageTimer);
             setLoading(false);
+            setShowRenderMessage(false);
         }
     };
 
@@ -99,9 +109,10 @@ const AssignmentsSem4: React.FC = () => {
                     </div>
 
                     {loading ? (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500">Loading questions...</p>
-                        </div>
+                        <LoadingSpinner
+                            message="Loading Semester 4 questions..."
+                            showRenderMessage={showRenderMessage}
+                        />
                     ) : filteredQuestions.length === 0 ? (
                         <div className="text-center py-12">
                             <p className="text-gray-500">No questions found matching your criteria.</p>

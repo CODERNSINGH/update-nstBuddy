@@ -132,4 +132,27 @@ router.post('/setup-admin', async (req, res) => {
     }
 });
 
+// Get all admins (for contributors list)
+router.get('/admins', async (req, res) => {
+    try {
+        const admins = await prisma.admin.findMany({
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        res.json(admins);
+    } catch (error) {
+        console.error('Get admins error:', error);
+        res.status(500).json({ error: 'Failed to fetch admins' });
+    }
+});
+
 export default router;
+

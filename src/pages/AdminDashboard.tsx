@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { questionsApi, noticesApi } from '../services/api';
-import { Question, Notice } from '../types';
-import { Plus, Edit, Trash2, LogOut } from 'lucide-react';
+import { questionsApi, noticesApi, authApi } from '../services/api';
+import { Question, Notice, Admin } from '../types';
+import { Plus, Edit, Trash2, LogOut, Users } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'questions' | 'notices'>('questions');
+    const [activeTab, setActiveTab] = useState<'questions' | 'notices' | 'contributors'>('questions');
     const [questions, setQuestions] = useState<Question[]>([]);
     const [notices, setNotices] = useState<Notice[]>([]);
+    const [admins, setAdmins] = useState<Admin[]>([]);
     const [loading, setLoading] = useState(false);
     const [showQuestionForm, setShowQuestionForm] = useState(false);
     const [showNoticeForm, setShowNoticeForm] = useState(false);
+    const [showContributorForm, setShowContributorForm] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
     const navigate = useNavigate();
@@ -33,6 +35,13 @@ const AdminDashboard: React.FC = () => {
         expiresAt: ''
     });
 
+    // Contributor form state
+    const [contributorForm, setContributorForm] = useState({
+        email: '',
+        uniqueKey: '',
+        name: ''
+    });
+
     useEffect(() => {
         // Check if user is authenticated
         const token = localStorage.getItem('adminToken');
@@ -50,9 +59,12 @@ const AdminDashboard: React.FC = () => {
             if (activeTab === 'questions') {
                 const data = await questionsApi.getAll({ semester: 4 });
                 setQuestions(data);
-            } else {
+            } else if (activeTab === 'notices') {
                 const data = await noticesApi.getAll();
                 setNotices(data);
+            } else if (activeTab === 'contributors') {
+                const data = await authApi.getAdmins();
+                setAdmins(data);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -150,6 +162,20 @@ const AdminDashboard: React.FC = () => {
         setShowNoticeForm(true);
     };
 
+    const handleContributorSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await authApi.setupAdmin(contributorForm.email, contributorForm.uniqueKey, contributorForm.name);
+            setShowContributorForm(false);
+            setContributorForm({ email: '', uniqueKey: '', name: '' });
+            fetchData();
+            alert('Contributor added successfully!');
+        } catch (error) {
+            console.error('Error adding contributor:', error);
+            alert('Failed to add contributor');
+        }
+    };
+
     return (
         <Layout>
             <div className="mb-8 flex justify-between items-center">
@@ -168,8 +194,8 @@ const AdminDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('questions')}
                     className={`px-4 py-2 font-medium transition-colors ${activeTab === 'questions'
-                            ? 'text-purple-600 border-b-2 border-purple-600'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'text-purple-600 border-b-2 border-purple-600'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     Questions
@@ -177,11 +203,21 @@ const AdminDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('notices')}
                     className={`px-4 py-2 font-medium transition-colors ${activeTab === 'notices'
-                            ? 'text-purple-600 border-b-2 border-purple-600'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'text-purple-600 border-b-2 border-purple-600'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     Notices
+                </button>
+                <button
+                    onClick={() => setActiveTab('contributors')}
+                    className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'contributors'
+                        ? 'text-purple-600 border-b-2 border-purple-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                >
+                    <Users className="w-4 h-4" />
+                    Contributors
                 </button>
             </div>
 
@@ -427,8 +463,8 @@ const AdminDashboard: React.FC = () => {
                                     <p className="text-gray-700 mb-2">{notice.content}</p>
                                     <div className="flex gap-4 text-sm text-gray-500">
                                         <span className={`px-2 py-1 rounded ${notice.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                                notice.priority === 'normal' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                            notice.priority === 'normal' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-yellow-100 text-yellow-700'
                                             }`}>
                                             {notice.priority.toUpperCase()}
                                         </span>
@@ -439,6 +475,109 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Contributors Tab */}
+            {activeTab === 'contributors' && (
+                <div>
+                    <div className="mb-6">
+                        <button
+                            onClick={() => {
+                                setShowContributorForm(!showContributorForm);
+                                setContributorForm({ email: '', uniqueKey: '', name: '' });
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Contributor
+                        </button>
+                    </div>
+
+                    {showContributorForm && (
+                        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                            <h2 className="text-xl font-bold mb-4">Add New Contributor</h2>
+                            <form onSubmit={handleContributorSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        value={contributorForm.name}
+                                        onChange={(e) => setContributorForm({ ...contributorForm, name: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        value={contributorForm.email}
+                                        onChange={(e) => setContributorForm({ ...contributorForm, email: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Unique Key (Password)</label>
+                                    <input
+                                        type="password"
+                                        value={contributorForm.uniqueKey}
+                                        onChange={(e) => setContributorForm({ ...contributorForm, uniqueKey: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        placeholder="Enter a secure unique key"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-4">
+                                    <button
+                                        type="submit"
+                                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                                    >
+                                        Add Contributor
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowContributorForm(false)}
+                                        className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    {loading ? (
+                        <p className="text-center text-gray-500">Loading...</p>
+                    ) : (
+                        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                            <table className="w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {admins.map((admin) => (
+                                        <tr key={admin.id}>
+                                            <td className="px-6 py-4 text-sm text-gray-900">{admin.name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">{admin.email}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                {new Date(admin.createdAt).toLocaleDateString('en-IN', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>

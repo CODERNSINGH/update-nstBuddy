@@ -1,12 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://update-nstbuddy.onrender.com/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 45000, // 45 seconds timeout for Render cold starts
 });
 
 // Add auth token to requests if available
@@ -111,6 +112,11 @@ export const authApi = {
 
     setupAdmin: async (email: string, uniqueKey: string, name: string) => {
         const response = await api.post('/auth/setup-admin', { email, uniqueKey, name });
+        return response.data;
+    },
+
+    getAdmins: async () => {
+        const response = await api.get('/auth/admins');
         return response.data;
     },
 };
