@@ -1,12 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://update-nstbuddy.onrender.com/api';
+const API_BASE_URL = 'https://update-nstbuddy.onrender.com/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true, // Enable credentials for session cookies
     timeout: 45000, // 45 seconds timeout for Render cold starts
 });
 
