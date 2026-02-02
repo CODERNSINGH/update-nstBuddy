@@ -72,7 +72,7 @@ router.get('/filters', async (req, res) => {
 // Create new question (admin only)
 router.post('/', authenticateAdmin, async (req, res) => {
     try {
-        const { questionName, subject, topic, link, semester } = req.body;
+        const { questionName, subject, topic, link, semester, year, courseId } = req.body;
 
         if (!questionName || !subject || !topic || !link) {
             return res.status(400).json({ error: 'All fields are required' });
@@ -84,7 +84,9 @@ router.post('/', authenticateAdmin, async (req, res) => {
                 subject,
                 topic,
                 link,
-                semester: semester || 4
+                semester: semester || 4,
+                year: year ? parseInt(year) : null,
+                courseId: courseId || null
             }
         });
 
@@ -99,7 +101,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
 router.put('/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { questionName, subject, topic, link, semester } = req.body;
+        const { questionName, subject, topic, link, semester, year, courseId } = req.body;
 
         const question = await prisma.question.update({
             where: { id },
@@ -108,7 +110,9 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
                 subject,
                 topic,
                 link,
-                semester
+                semester,
+                year: year ? parseInt(year) : null,
+                courseId: courseId || null
             }
         });
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import UserProfile from '../auth/UserProfile';
 
 const Navbar: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -47,8 +48,8 @@ const Navbar: React.FC = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`block px-4 py-3 text-sm transition-all duration-200 ${dev.isTopContributor
-                          ? 'bg-purple-50 border-l-4 border-purple-600 hover:bg-purple-100'
-                          : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-purple-50 border-l-4 border-purple-600 hover:bg-purple-100'
+                        : 'text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -68,6 +69,9 @@ const Navbar: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* User Profile */}
+            <UserProfile />
           </div>
         </div>
       </div>
@@ -76,3 +80,4 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+

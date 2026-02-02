@@ -10,6 +10,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String   @id @default(cuid())
+  googleId    String   @unique
+  email       String   @unique
+  name        String
+  picture     String?
+  isPro       Boolean  @default(false)
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime @default(now())
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model Course {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  year        Int?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
 model Question {
   id           String   @id @default(cuid())
   questionName String
@@ -17,12 +47,17 @@ model Question {
   topic        String
   link         String
   semester     Int      @default(4)
+  year         Int?
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([semester])
   @@index([subject])
   @@index([topic])
+  @@index([courseId])
+  @@index([year])
 }
 
 model Notice {

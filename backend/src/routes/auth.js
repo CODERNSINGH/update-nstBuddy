@@ -1,145 +1,68 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
+import passport from 'passport';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Admin login
-router.post('/login', async (req, res) => {
-    try {
-        const { email, uniqueKey } = req.body;
+// Initiate Google OAuth login
+router.get('/google', passport.authenticate('google', {
+    scope: ['profile', 'email']
+}));
 
-        if (!email || !uniqueKey) {
-            return res.status(400).json({ error: 'Email and unique key are required' });
-        }
+// Google OAuth callback
+router.get('/google/callback',
+    passport.authenticate('google', {
+        failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`
+    }),
+    (req, res) => {
+        // Successful authentication, redirect to frontend
+        res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
+    }
+);
 
-        // Find admin by email
-        const admin = await prisma.admin.findUnique({
-            where: { email }
-        });
-
-        if (!admin) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Compare unique key
-        const isValidKey = await bcrypt.compare(uniqueKey, admin.uniqueKey);
-
-        if (!isValidKey) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Create simple token (email:uniqueKey base64 encoded)
-        const token = Buffer.from(`${email}:${uniqueKey}`).toString('base64');
-
+// Get current authenticated user
+router.get('/current-user', (req, res) => {
+    if (req.isAuthenticated()) {
         res.json({
             success: true,
-            token,
-            admin: {
-                id: admin.id,
-                email: admin.email,
-                name: admin.name
-            }
+            user: req.user
         });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
+    } else {
+        res.status(401).json({
+            success: false,
+            error: 'Not authenticated'
+        });
     }
 });
 
-// Verify token
-router.post('/verify', async (req, res) => {
-    try {
-        const { token } = req.body;
-
-        if (!token) {
-            return res.status(400).json({ error: 'Token is required' });
+// Logout
+router.post('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Logout failed' });
         }
-
-        const decoded = Buffer.from(token, 'base64').toString('utf-8');
-        const [email, uniqueKey] = decoded.split(':');
-
-        const admin = await prisma.admin.findUnique({
-            where: { email }
-        });
-
-        if (!admin) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-
-        const isValidKey = await bcrypt.compare(uniqueKey, admin.uniqueKey);
-
-        if (!isValidKey) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-
-        res.json({
-            success: true,
-            admin: {
-                id: admin.id,
-                email: admin.email,
-                name: admin.name
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Session destruction failed' });
             }
+            res.clearCookie('connect.sid');
+            res.json({ success: true, message: 'Logged out successfully' });
         });
-    } catch (error) {
-        console.error('Verify error:', error);
-        res.status(401).json({ error: 'Invalid token' });
-    }
+    });
 });
 
-// Create initial admin (for setup only - should be removed in production)
-router.post('/setup-admin', async (req, res) => {
+// Get all users (admin only) - for contributors list
+router.get('/users', async (req, res) => {
     try {
-        const { email, uniqueKey, name } = req.body;
-
-        if (!email || !uniqueKey || !name) {
-            return res.status(400).json({ error: 'Email, unique key, and name are required' });
-        }
-
-        // Check if admin already exists
-        const existingAdmin = await prisma.admin.findUnique({
-            where: { email }
-        });
-
-        if (existingAdmin) {
-            return res.status(400).json({ error: 'Admin already exists' });
-        }
-
-        // Hash the unique key
-        const hashedKey = await bcrypt.hash(uniqueKey, 10);
-
-        const admin = await prisma.admin.create({
-            data: {
-                email,
-                uniqueKey: hashedKey,
-                name
-            }
-        });
-
-        res.json({
-            success: true,
-            message: 'Admin created successfully',
-            admin: {
-                id: admin.id,
-                email: admin.email,
-                name: admin.name
-            }
-        });
-    } catch (error) {
-        console.error('Setup admin error:', error);
-        res.status(500).json({ error: 'Failed to create admin' });
-    }
-});
-
-// Get all admins (for contributors list)
-router.get('/admins', async (req, res) => {
-    try {
-        const admins = await prisma.admin.findMany({
+        const users = await prisma.user.findMany({
             select: {
                 id: true,
                 email: true,
                 name: true,
+                picture: true,
+                isPro: true,
+                isAdmin: true,
                 createdAt: true
             },
             orderBy: {
@@ -147,12 +70,55 @@ router.get('/admins', async (req, res) => {
             }
         });
 
-        res.json(admins);
+        res.json(users);
     } catch (error) {
-        console.error('Get admins error:', error);
-        res.status(500).json({ error: 'Failed to fetch admins' });
+        console.error('Get users error:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Update user Pro status (admin only)
+router.patch('/users/:id/pro', async (req, res) => {
+    try {
+        if (!req.isAuthenticated() || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { id } = req.params;
+        const { isPro } = req.body;
+
+        const user = await prisma.user.update({
+            where: { id },
+            data: { isPro }
+        });
+
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error('Update user Pro status error:', error);
+        res.status(500).json({ error: 'Failed to update user' });
+    }
+});
+
+// Update user Admin status (admin only)
+router.patch('/users/:id/admin', async (req, res) => {
+    try {
+        if (!req.isAuthenticated() || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { id } = req.params;
+        const { isAdmin } = req.body;
+
+        const user = await prisma.user.update({
+            where: { id },
+            data: { isAdmin }
+        });
+
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error('Update user Admin status error:', error);
+        res.status(500).json({ error: 'Failed to update user' });
     }
 });
 
 export default router;
-
