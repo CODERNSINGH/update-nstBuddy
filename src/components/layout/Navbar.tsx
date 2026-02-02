@@ -5,8 +5,8 @@ const Navbar: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const developers = [
+    { name: 'Ranajeet Roy', link: 'https://www.linkedin.com/in/ranajeet-roy-3a5822323/', isTopContributor: true },
     { name: 'Narendra Singh', link: 'https://www.linkedin.com/in/codernsingh/' },
-    { name: 'Ranajeet Roy', link: 'https://www.linkedin.com/in/ranajeet-roy-3a5822323/' },
     { name: 'Keshav Rajput', link: 'https://www.linkedin.com/in/keshavrajput/' },
     { name: 'Pranav Singh', link: 'https://www.linkedin.com/in/pranav-singh-08155a244/' },
     { name: 'Mayank Gupta', link: 'https://www.linkedin.com/in/mayank0875/' },
@@ -39,16 +39,30 @@ const Navbar: React.FC = () => {
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10">
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-10 overflow-hidden">
                   {developers.map((dev, index) => (
                     <a
                       key={index}
                       href={dev.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className={`block px-4 py-3 text-sm transition-all duration-200 ${dev.isTopContributor
+                          ? 'bg-purple-50 border-l-4 border-purple-600 hover:bg-purple-100'
+                          : 'text-gray-700 hover:bg-gray-50'
+                        }`}
                     >
-                      {dev.name}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`${dev.isTopContributor ? 'font-semibold text-purple-900' : 'font-medium text-gray-700'}`}>
+                            {dev.name}
+                          </span>
+                        </div>
+                        {dev.isTopContributor && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-600 text-white">
+                            Top Contributor
+                          </span>
+                        )}
+                      </div>
                     </a>
                   ))}
                 </div>

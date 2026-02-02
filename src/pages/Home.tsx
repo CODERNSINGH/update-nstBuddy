@@ -6,6 +6,8 @@ import NoticeBoard from '../components/NoticeBoard';
 const Home: React.FC = () => {
   return (
     <Layout>
+
+      
       
 
       <div className="text-center py-12">
@@ -40,7 +42,10 @@ const Home: React.FC = () => {
           </Link>
         </div>
       </div>
+
+
       <NoticeBoard />
+      
     </Layout>
   );
 };
