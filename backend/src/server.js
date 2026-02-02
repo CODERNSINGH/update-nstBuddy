@@ -50,7 +50,6 @@ app.use(session({
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-domain cookies in production
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
   }
-}
 }));
 
 // Initialize Passport
