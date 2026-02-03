@@ -4,8 +4,10 @@ import Layout from '../components/layout/Layout';
 import { questionsApi, noticesApi, authApi } from '../services/api';
 import { Question, Notice, Admin } from '../types';
 import { Plus, Edit, Trash2, LogOut, Users } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const AdminDashboard: React.FC = () => {
+    const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState<'questions' | 'notices' | 'contributors'>('questions');
     const [questions, setQuestions] = useState<Question[]>([]);
     const [notices, setNotices] = useState<Notice[]>([]);
@@ -43,13 +45,6 @@ const AdminDashboard: React.FC = () => {
     });
 
     useEffect(() => {
-        // Check if user is authenticated
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-            navigate('/admin/login');
-            return;
-        }
-
         fetchData();
     }, [activeTab]);
 
@@ -73,10 +68,9 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminData');
-        navigate('/admin/login');
+    const handleLogout = async () => {
+        await logout();
+        navigate('/');
     };
 
     const handleQuestionSubmit = async (e: React.FormEvent) => {

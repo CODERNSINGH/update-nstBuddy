@@ -1,15 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
 
-// Firebase configuration from environment variables
+// Firebase configuration
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+    apiKey: "AIzaSyCOIRfpW1k-0Xsqv1g9zZgLtBVpLq3c334",
+    authDomain: "nstbuddy-1fe6f.firebaseapp.com",
+    projectId: "nstbuddy-1fe6f",
+    storageBucket: "nstbuddy-1fe6f.firebasestorage.app",
+    messagingSenderId: "284279691898",
+    appId: "1:284279691898:web:cd3b2d320cd61b0788f9c3",
+    measurementId: "G-D5MEFFH08E"
 };
 
 console.log('🔥 Initializing Firebase with config:', {

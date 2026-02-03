@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5001/api';
+const API_URL = 'https://update-nstbuddy.onrender.com/api';
+
 
 // Configure axios to send credentials (cookies) with requests
 axios.defaults.withCredentials = true;
