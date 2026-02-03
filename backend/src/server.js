@@ -2,8 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import session from 'express-session';
-import passport from './config/passport.js';
 import questionRoutes from './routes/questions.js';
 import noticeRoutes from './routes/notices.js';
 import authRoutes from './routes/auth.js';
@@ -38,23 +36,6 @@ app.use(cors({
 
 // Body parser middleware
 app.use(express.json());
-
-// Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-domain cookies in production
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-  }
-}));
-
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Routes
 app.use('/api/auth', authRoutes);

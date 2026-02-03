@@ -1,123 +1,210 @@
 import express from 'express';
-import passport from 'passport';
+import admin from 'firebase-admin';
 import { PrismaClient } from '@prisma/client';
+import { authenticateUser, authenticateAdmin } from '../middleware/auth.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Initialize Firebase Admin SDK
+// Priority: Environment variables > Service account JSON file
+if (!admin.apps.length) {
+    let firebaseConfig;
+
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+        // Use environment variables (for production deployment)
+        console.log('🔥 Initializing Firebase Admin SDK with environment variables');
+        firebaseConfig = {
+            credential: admin.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            })
+        };
+    } else {
+        // Fall back to service account JSON file (for local development)
+        console.log('🔥 Initializing Firebase Admin SDK with service account file');
+        const serviceAccountPath = join(__dirname, '../../firebase-service-account.json');
+
+        if (!fs.existsSync(serviceAccountPath)) {
+            throw new Error('❌ Firebase service account file not found and environment variables not set!');
+        }
+
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        firebaseConfig = {
+            credential: admin.credential.cert(serviceAccount)
+        };
+    }
+
+    admin.initializeApp(firebaseConfig);
+    console.log('✅ Firebase Admin SDK initialized successfully');
+}
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Initiate Google OAuth login
-router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
-}));
+// Verify Firebase ID token and get/create user
+router.post('/verify-token', async (req, res) => {
+    try {
+        const { idToken } = req.body;
 
-// Google OAuth callback
-router.get('/google/callback',
-    passport.authenticate('google', {
-        failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`
-    }),
-    (req, res) => {
-        // Successful authentication, redirect to frontend
-        res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
-    }
-);
+        if (!idToken) {
+            return res.status(400).json({ success: false, error: 'ID token is required' });
+        }
 
-// Get current authenticated user
-router.get('/current-user', (req, res) => {
-    if (req.isAuthenticated()) {
+        console.log('\n🔐 ═══════════════════════════════════════════');
+        console.log('🔐 VERIFYING FIREBASE TOKEN');
+        console.log('🔐 ═══════════════════════════════════════════');
+
+        // Verify the Firebase ID token
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+        console.log('📋 Firebase Token Data:');
+        console.log(`   ├─ Firebase UID: ${decodedToken.uid}`);
+        console.log(`   ├─ Email: ${decodedToken.email}`);
+        console.log(`   ├─ Name: ${decodedToken.name || 'N/A'}`);
+        console.log(`   └─ Picture: ${decodedToken.picture ? 'Yes' : 'No'}`);
+
+        console.log('\n🔍 Checking if user exists in database...');
+
+        // Check if user exists in database
+        let user = await prisma.user.findUnique({
+            where: { firebaseUid: decodedToken.uid }
+        });
+
+        if (!user) {
+            // Create new user
+            console.log('👤 User not found, creating new user...');
+            user = await prisma.user.create({
+                data: {
+                    firebaseUid: decodedToken.uid,
+                    email: decodedToken.email,
+                    name: decodedToken.name || decodedToken.email.split('@')[0],
+                    picture: decodedToken.picture || null,
+                }
+            });
+            console.log('✅ New user created successfully!');
+            console.log(`   ├─ User ID: ${user.id}`);
+            console.log(`   ├─ Email: ${user.email}`);
+            console.log(`   ├─ isPro: ${user.isPro}`);
+            console.log(`   └─ isAdmin: ${user.isAdmin}`);
+        } else {
+            // Update last login time
+            console.log('✅ User found! Updating last login time...');
+            console.log(`   ├─ User ID: ${user.id}`);
+            console.log(`   ├─ Email: ${user.email}`);
+            console.log(`   ├─ isPro: ${user.isPro}`);
+            console.log(`   └─ isAdmin: ${user.isAdmin}`);
+
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { lastLoginAt: new Date() }
+            });
+            console.log('✅ Last login time updated successfully');
+        }
+
+        console.log('\n✅ Firebase authentication successful!');
+        console.log('🔐 ═══════════════════════════════════════════\n');
+
         res.json({
             success: true,
-            user: req.user
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                picture: user.picture,
+                isPro: user.isPro,
+                isAdmin: user.isAdmin
+            }
         });
-    } else {
+    } catch (error) {
+        console.error('❌ Firebase token verification error:', error);
+        console.log('🔐 ═══════════════════════════════════════════\n');
         res.status(401).json({
             success: false,
-            error: 'Not authenticated'
+            error: 'Invalid or expired token'
         });
     }
 });
 
-// Logout
+// Logout endpoint
 router.post('/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Logout failed' });
-        }
-        req.session.destroy((err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Session destruction failed' });
-            }
-            res.clearCookie('connect.sid');
-            res.json({ success: true, message: 'Logged out successfully' });
-        });
-    });
+    res.json({ success: true, message: 'Logged out successfully' });
 });
 
-// Get all users (admin only) - for contributors list
-router.get('/users', async (req, res) => {
+// Get all admins (for contributors list)
+router.get('/admins', async (req, res) => {
     try {
-        const users = await prisma.user.findMany({
+        const admins = await prisma.user.findMany({
+            where: { isAdmin: true },
             select: {
                 id: true,
-                email: true,
                 name: true,
-                picture: true,
-                isPro: true,
-                isAdmin: true,
+                email: true,
                 createdAt: true
             },
-            orderBy: {
-                createdAt: 'desc'
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json(admins);
+    } catch (error) {
+        console.error('Get admins error:', error);
+        res.status(500).json({ error: 'Failed to fetch admins' });
+    }
+});
+
+// Setup admin (create admin user with unique key)
+router.post('/setup-admin', async (req, res) => {
+    try {
+        const { email, uniqueKey, name } = req.body;
+
+        if (!email || !uniqueKey || !name) {
+            return res.status(400).json({ error: 'Email, unique key, and name are required' });
+        }
+
+        // Verify unique key (you should change this to a secure key)
+        if (uniqueKey !== process.env.ADMIN_SECRET_KEY) {
+            return res.status(403).json({ error: 'Invalid unique key' });
+        }
+
+        // Check if user already exists
+        let user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (user) {
+            // Update existing user to admin
+            user = await prisma.user.update({
+                where: { email },
+                data: { isAdmin: true, name }
+            });
+        } else {
+            // Create new admin user
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    name,
+                    firebaseUid: `admin-${Date.now()}`, // Temporary UID for admin
+                    isAdmin: true
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                isAdmin: user.isAdmin
             }
         });
-
-        res.json(users);
     } catch (error) {
-        console.error('Get users error:', error);
-        res.status(500).json({ error: 'Failed to fetch users' });
-    }
-});
-
-// Update user Pro status (admin only)
-router.patch('/users/:id/pro', async (req, res) => {
-    try {
-        if (!req.isAuthenticated() || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        const { id } = req.params;
-        const { isPro } = req.body;
-
-        const user = await prisma.user.update({
-            where: { id },
-            data: { isPro }
-        });
-
-        res.json({ success: true, user });
-    } catch (error) {
-        console.error('Update user Pro status error:', error);
-        res.status(500).json({ error: 'Failed to update user' });
-    }
-});
-
-// Update user Admin status (admin only)
-router.patch('/users/:id/admin', async (req, res) => {
-    try {
-        if (!req.isAuthenticated() || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        const { id } = req.params;
-        const { isAdmin } = req.body;
-
-        const user = await prisma.user.update({
-            where: { id },
-            data: { isAdmin }
-        });
-
-        res.json({ success: true, user });
-    } catch (error) {
-        console.error('Update user Admin status error:', error);
-        res.status(500).json({ error: 'Failed to update user' });
+        console.error('Setup admin error:', error);
+        res.status(500).json({ error: 'Failed to setup admin' });
     }
 });
 
