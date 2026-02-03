@@ -1,14 +1,14 @@
 import axios from 'axios';
 
-const API_URL = 'https://update-nstbuddy.onrender.com/api';
+const API_URL = 'http://localhost:5001/api';
 
 // Configure axios to send credentials (cookies) with requests
 axios.defaults.withCredentials = true;
 
 export const authAPI = {
-    // Get current authenticated user
-    getCurrentUser: async () => {
-        const response = await axios.get(`${API_URL}/auth/current-user`);
+    // Verify Firebase ID token with backend
+    verifyToken: async (idToken: string) => {
+        const response = await axios.post(`${API_URL}/auth/verify-token`, { idToken });
         return response.data;
     },
 
@@ -16,11 +16,6 @@ export const authAPI = {
     logout: async () => {
         const response = await axios.post(`${API_URL}/auth/logout`);
         return response.data;
-    },
-
-    // Get Google OAuth URL
-    getGoogleAuthUrl: () => {
-        return `${API_URL}/auth/google`;
     }
 };
 
@@ -43,4 +38,3 @@ export const userAPI = {
         return response.data;
     }
 };
-

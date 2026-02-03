@@ -4,9 +4,17 @@ import { useAuth } from '../../contexts/AuthContext';
 const GoogleSignInButton: React.FC = () => {
     const { login } = useAuth();
 
+    const handleSignIn = async () => {
+        try {
+            await login();
+        } catch (error) {
+            console.error('Sign in failed:', error);
+        }
+    };
+
     return (
         <button
-            onClick={login}
+            onClick={handleSignIn}
             className="flex items-center justify-center gap-3 px-6 py-3 bg-white text-gray-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-medium border border-gray-200 hover:bg-gray-50"
         >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

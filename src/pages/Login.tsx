@@ -1,7 +1,41 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Login: React.FC = () => {
+    const { user, loading } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    console.log('🔍 Login page - loading:', loading, 'user:', user?.email || 'none');
+
+    // Redirect to home if already logged in
+    useEffect(() => {
+        console.log('🔄 Login useEffect - loading:', loading, 'user:', user?.email || 'none');
+
+        if (!loading && user) {
+            // Get the page they were trying to visit, or default to home
+            const from = (location.state as any)?.from?.pathname || '/';
+            console.log('✅ User is authenticated, redirecting to:', from);
+            navigate(from, { replace: true });
+        }
+    }, [user, loading, navigate, location]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    // Don't show login page if user is already authenticated
+    if (user) {
+        return null;
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50">
             <div className="max-w-md w-full mx-4">
