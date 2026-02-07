@@ -1,4 +1,7 @@
 import { auth } from '../config/firebase.js';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Middleware to verify Firebase ID token
 export const authenticateUser = async (req, res, next) => {
@@ -13,7 +16,32 @@ export const authenticateUser = async (req, res, next) => {
 
         // Verify the ID token
         const decodedToken = await auth.verifyIdToken(idToken);
-        req.user = decodedToken;
+
+        // Get user from database or create if doesn't exist
+        let user = await prisma.user.findUnique({
+            where: { firebaseUid: decodedToken.uid }
+        });
+
+        if (!user) {
+            // Auto-create user if they don't exist
+            console.log('👤 User not found in database, creating new user...');
+            user = await prisma.user.create({
+                data: {
+                    firebaseUid: decodedToken.uid,
+                    email: decodedToken.email,
+                    name: decodedToken.name || decodedToken.email.split('@')[0],
+                    picture: decodedToken.picture || null,
+                }
+            });
+            console.log('✅ New user created successfully:', user.email);
+        }
+
+        req.user = {
+            ...decodedToken,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            userId: user.id
+        };
 
         next();
     } catch (error) {
@@ -37,18 +65,34 @@ export const authenticateAdmin = async (req, res, next) => {
         const decodedToken = await auth.verifyIdToken(idToken);
 
         // Check if user is admin in database
-        const { PrismaClient } = await import('@prisma/client');
-        const prisma = new PrismaClient();
-
-        const user = await prisma.user.findUnique({
+        let user = await prisma.user.findUnique({
             where: { firebaseUid: decodedToken.uid }
         });
 
-        if (!user || !user.isAdmin) {
+        if (!user) {
+            // Auto-create user if they don't exist
+            console.log('👤 Admin user not found in database, creating new user...');
+            user = await prisma.user.create({
+                data: {
+                    firebaseUid: decodedToken.uid,
+                    email: decodedToken.email,
+                    name: decodedToken.name || decodedToken.email.split('@')[0],
+                    picture: decodedToken.picture || null,
+                }
+            });
+            console.log('✅ New user created:', user.email);
+        }
+
+        if (!user.isAdmin) {
             return res.status(403).json({ error: 'Admin access required' });
         }
 
-        req.user = decodedToken;
+        req.user = {
+            ...decodedToken,
+            email: user.email,
+            isAdmin: user.isAdmin
+        };
+
         next();
     } catch (error) {
         console.error('Admin authentication error:', error);

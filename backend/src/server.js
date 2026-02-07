@@ -6,6 +6,8 @@ import questionRoutes from './routes/questions.js';
 import noticeRoutes from './routes/notices.js';
 import authRoutes from './routes/auth.js';
 import courseRoutes from './routes/courses.js';
+import campusRoutes from './routes/campuses.js';
+import contributionRoutes from './routes/contributions.js';
 
 dotenv.config();
 
@@ -39,9 +41,11 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/campuses', campusRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/contributions', contributionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

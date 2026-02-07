@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// NST Buddy 2.0 - Multi-Campus Platform Schema
+// This is your Prisma schema file
 
 generator client {
   provider = "prisma-client-js"
@@ -10,56 +10,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          String   @id @default(cuid())
-  firebaseUid String   @unique
-  email       String   @unique
-  name        String
-  picture     String?
-  isPro       Boolean  @default(false)
-  isAdmin     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  lastLoginAt DateTime @default(now())
-
-  @@index([email])
-  @@index([firebaseUid])
-}
-
-model Course {
+// Campus Model - Delhi NCR, Pune, Bangalore
+model Campus {
   id          String     @id @default(cuid())
-  name        String     @unique
+  name        String     @unique // "Delhi NCR", "Pune", "Bangalore"
+  slug        String     @unique // "delhi-ncr", "pune", "bangalore"
   description String?
-  year        Int?
+  imageUrl    String?
   isActive    Boolean    @default(true)
+  questions   Question[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  questions   Question[]
 
-  @@index([name])
+  @@index([slug])
   @@index([isActive])
 }
 
-model Question {
-  id           String   @id @default(cuid())
-  questionName String
-  subject      String
-  topic        String
-  link         String
-  semester     Int      @default(4)
-  year         Int?
-  courseId     String?
-  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+// User Model - Enhanced with contribution tracking
+model User {
+  id                 String     @id @default(cuid())
+  firebaseUid        String     @unique
+  email              String     @unique
+  name               String
+  picture            String?
+  isPro              Boolean    @default(false)
+  isAdmin            Boolean    @default(false)
+  
+  // Contribution stats
+  contributionCount  Int        @default(0)
+  contributionPoints Int        @default(0)
+  
+  questions          Question[]
+  lastLoginAt        DateTime   @default(now())
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
-  @@index([semester])
-  @@index([subject])
-  @@index([topic])
-  @@index([courseId])
-  @@index([year])
+  @@index([email])
+  @@index([firebaseUid])
+  @@index([contributionPoints])
 }
 
+// Question Model - Multi-campus with contributor tracking
+model Question {
+  id               String   @id @default(cuid())
+  questionName     String
+  subject          String
+  topic            String
+  link             String
+  semester         Int      // 1-8
+  
+  // Campus relation
+  campus           Campus   @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  campusId         String
+  
+  // Contributor tracking
+  contributorEmail String
+  contributor      User     @relation(fields: [contributorEmail], references: [email], onDelete: Cascade)
+  
+  // Admin approval workflow
+  isApproved       Boolean  @default(true) // Auto-approve for now
+  approvedBy       String?
+  approvedAt       DateTime?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([campusId, semester])
+  @@index([contributorEmail])
+  @@index([subject])
+  @@index([topic])
+  @@index([isApproved])
+}
+
+// Notice Model - Unchanged
 model Notice {
   id        String    @id @default(cuid())
   title     String
@@ -74,6 +97,7 @@ model Notice {
   @@index([priority])
 }
 
+// Admin Model - Keep for backward compatibility (will be deprecated)
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique

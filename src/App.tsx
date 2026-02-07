@@ -1,18 +1,21 @@
 // src/App.tsx
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Home from './pages/Home';
-import Assignments from './pages/Assignments';
-import Days100 from './pages/Days100';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ReactGA from 'react-ga4';
 import usePageTracking from './hooks/usePageTracking';
-import AssigenmentSem2 from './pages/AssigenmentSem2';
-import AssignmentsSem4 from './pages/AssignmentsSem4';
-import AdminDashboard from './pages/AdminDashboard';
-import Login from './pages/Login';
-import AuthCallback from './pages/AuthCallback';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Pages
+import Login from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
+import CampusSelection from './pages/CampusSelection';
+import SemesterSelection from './pages/SemesterSelection';
+import Questions from './pages/Questions';
+import ContributePage from './pages/ContributePage';
+import UserProfile from './pages/UserProfile';
+import AdminDashboard from './pages/AdminDashboard';
+import Days100 from './pages/Days100';
 
 // Initialize Google Analytics
 ReactGA.initialize('G-P95H63YPVW');
@@ -26,18 +29,19 @@ const AppRoutes: React.FC = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-      {/* Protected routes */}
-      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/assignments" element={<ProtectedRoute><Assignments /></ProtectedRoute>} />
-      <Route path="/assignmentsSem3" element={<ProtectedRoute><AssigenmentSem2 /></ProtectedRoute>} />
-      <Route path="/assignmentsSem4" element={<ProtectedRoute><AssignmentsSem4 /></ProtectedRoute>} />
+      {/* Protected routes - New NST Buddy 2.0 Structure */}
+      <Route path="/" element={<ProtectedRoute><CampusSelection /></ProtectedRoute>} />
+      <Route path="/campus/:campusSlug" element={<ProtectedRoute><SemesterSelection /></ProtectedRoute>} />
+      <Route path="/campus/:campusSlug/semester/:semesterId" element={<ProtectedRoute><Questions /></ProtectedRoute>} />
+      <Route path="/contribute" element={<ProtectedRoute><ContributePage /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       <Route path="/100days" element={<ProtectedRoute><Days100 /></ProtectedRoute>} />
 
       {/* Admin routes */}
       <Route path="/admin/dashboard" element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>} />
 
       {/* Fallback */}
-      <Route path="*" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="*" element={<ProtectedRoute><CampusSelection /></ProtectedRoute>} />
     </Routes>
   );
 };

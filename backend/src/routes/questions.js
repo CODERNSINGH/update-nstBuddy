@@ -1,16 +1,28 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateAdmin } from '../middleware/auth.js';
+import { authenticateAdmin, authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Get all questions with optional filtering
+// GET /api/questions - Get all questions with filtering
 router.get('/', async (req, res) => {
     try {
-        const { semester, subject, topic, search } = req.query;
+        const { semester, subject, topic, search, campus } = req.query;
 
-        const where = {};
+        const where = {
+            isApproved: true // Only show approved questions
+        };
+
+        if (campus) {
+            // Find campus by slug
+            const campusRecord = await prisma.campus.findUnique({
+                where: { slug: campus }
+            });
+            if (campusRecord) {
+                where.campusId = campusRecord.id;
+            }
+        }
 
         if (semester) {
             where.semester = parseInt(semester);
@@ -34,22 +46,56 @@ router.get('/', async (req, res) => {
 
         const questions = await prisma.question.findMany({
             where,
+            include: {
+                campus: {
+                    select: {
+                        name: true,
+                        slug: true
+                    }
+                },
+                contributor: {
+                    select: {
+                        name: true,
+                        email: true,
+                        picture: true
+                    }
+                }
+            },
             orderBy: { createdAt: 'desc' }
         });
 
-        res.json(questions);
+        res.json({
+            success: true,
+            questions
+        });
     } catch (error) {
         console.error('Get questions error:', error);
-        res.status(500).json({ error: 'Failed to fetch questions' });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch questions'
+        });
     }
 });
 
-// Get unique subjects and topics for filtering
+// GET /api/questions/filters - Get unique subjects and topics for filtering
 router.get('/filters', async (req, res) => {
     try {
-        const { semester } = req.query;
+        const { semester, campus } = req.query;
 
-        const where = semester ? { semester: parseInt(semester) } : {};
+        const where = { isApproved: true };
+
+        if (campus) {
+            const campusRecord = await prisma.campus.findUnique({
+                where: { slug: campus }
+            });
+            if (campusRecord) {
+                where.campusId = campusRecord.id;
+            }
+        }
+
+        if (semester) {
+            where.semester = parseInt(semester);
+        }
 
         const questions = await prisma.question.findMany({
             where,
@@ -59,23 +105,127 @@ router.get('/filters', async (req, res) => {
             }
         });
 
-        const subjects = [...new Set(questions.map(q => q.subject))];
-        const topics = [...new Set(questions.map(q => q.topic))];
+        const subjects = [...new Set(questions.map(q => q.subject))].sort();
+        const topics = [...new Set(questions.map(q => q.topic))].sort();
 
-        res.json({ subjects, topics });
+        res.json({
+            success: true,
+            subjects,
+            topics
+        });
     } catch (error) {
         console.error('Get filters error:', error);
-        res.status(500).json({ error: 'Failed to fetch filters' });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch filters'
+        });
     }
 });
 
-// Create new question (admin only)
+// POST /api/questions/contribute - Public contribution endpoint (requires auth)
+router.post('/contribute', authenticateUser, async (req, res) => {
+    try {
+        const { questionName, subject, topic, link, semester, campusSlug } = req.body;
+        const contributorEmail = req.user.email;
+
+        // Validation
+        if (!questionName || !subject || !topic || !link || !semester || !campusSlug) {
+            return res.status(400).json({
+                success: false,
+                error: 'All fields are required'
+            });
+        }
+
+        // Validate semester (1-8)
+        const semesterNum = parseInt(semester);
+        if (semesterNum < 1 || semesterNum > 8) {
+            return res.status(400).json({
+                success: false,
+                error: 'Semester must be between 1 and 8'
+            });
+        }
+
+        // Find campus
+        const campus = await prisma.campus.findUnique({
+            where: { slug: campusSlug }
+        });
+
+        if (!campus) {
+            return res.status(404).json({
+                success: false,
+                error: 'Campus not found'
+            });
+        }
+
+        // Create question
+        const question = await prisma.question.create({
+            data: {
+                questionName,
+                subject,
+                topic,
+                link,
+                semester: semesterNum,
+                campusId: campus.id,
+                contributorEmail,
+                isApproved: true, // Auto-approve for now
+                approvedAt: new Date()
+            },
+            include: {
+                campus: true,
+                contributor: {
+                    select: {
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        // Update contributor stats
+        await prisma.user.update({
+            where: { email: contributorEmail },
+            data: {
+                contributionCount: { increment: 1 },
+                contributionPoints: { increment: 10 } // 10 points per contribution
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Question contributed successfully!',
+            question
+        });
+    } catch (error) {
+        console.error('Contribute question error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to contribute question'
+        });
+    }
+});
+
+// POST /api/questions - Create question (admin only)
 router.post('/', authenticateAdmin, async (req, res) => {
     try {
-        const { questionName, subject, topic, link, semester, year, courseId } = req.body;
+        const { questionName, subject, topic, link, semester, campusSlug } = req.body;
+        const contributorEmail = req.user.email;
 
-        if (!questionName || !subject || !topic || !link) {
-            return res.status(400).json({ error: 'All fields are required' });
+        if (!questionName || !subject || !topic || !link || !semester || !campusSlug) {
+            return res.status(400).json({
+                success: false,
+                error: 'All fields are required'
+            });
+        }
+
+        const campus = await prisma.campus.findUnique({
+            where: { slug: campusSlug }
+        });
+
+        if (!campus) {
+            return res.status(404).json({
+                success: false,
+                error: 'Campus not found'
+            });
         }
 
         const question = await prisma.question.create({
@@ -84,46 +234,70 @@ router.post('/', authenticateAdmin, async (req, res) => {
                 subject,
                 topic,
                 link,
-                semester: semester || 4,
-                year: year ? parseInt(year) : null,
-                courseId: courseId || null
+                semester: parseInt(semester),
+                campusId: campus.id,
+                contributorEmail,
+                isApproved: true,
+                approvedBy: contributorEmail,
+                approvedAt: new Date()
             }
         });
 
-        res.status(201).json(question);
+        res.status(201).json({
+            success: true,
+            question
+        });
     } catch (error) {
         console.error('Create question error:', error);
-        res.status(500).json({ error: 'Failed to create question' });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create question'
+        });
     }
 });
 
-// Update question (admin only)
+// PUT /api/questions/:id - Update question (admin only)
 router.put('/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { questionName, subject, topic, link, semester, year, courseId } = req.body;
+        const { questionName, subject, topic, link, semester, campusSlug } = req.body;
+
+        const updateData = {
+            questionName,
+            subject,
+            topic,
+            link,
+            semester: parseInt(semester)
+        };
+
+        if (campusSlug) {
+            const campus = await prisma.campus.findUnique({
+                where: { slug: campusSlug }
+            });
+            if (campus) {
+                updateData.campusId = campus.id;
+            }
+        }
 
         const question = await prisma.question.update({
             where: { id },
-            data: {
-                questionName,
-                subject,
-                topic,
-                link,
-                semester,
-                year: year ? parseInt(year) : null,
-                courseId: courseId || null
-            }
+            data: updateData
         });
 
-        res.json(question);
+        res.json({
+            success: true,
+            question
+        });
     } catch (error) {
         console.error('Update question error:', error);
-        res.status(500).json({ error: 'Failed to update question' });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update question'
+        });
     }
 });
 
-// Delete question (admin only)
+// DELETE /api/questions/:id - Delete question (admin only)
 router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -132,10 +306,45 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
             where: { id }
         });
 
-        res.json({ success: true, message: 'Question deleted successfully' });
+        res.json({
+            success: true,
+            message: 'Question deleted successfully'
+        });
     } catch (error) {
         console.error('Delete question error:', error);
-        res.status(500).json({ error: 'Failed to delete question' });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete question'
+        });
+    }
+});
+
+// POST /api/questions/:id/approve - Approve question (admin only)
+router.post('/:id/approve', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const approvedBy = req.user.email;
+
+        const question = await prisma.question.update({
+            where: { id },
+            data: {
+                isApproved: true,
+                approvedBy,
+                approvedAt: new Date()
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'Question approved successfully',
+            question
+        });
+    } catch (error) {
+        console.error('Approve question error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to approve question'
+        });
     }
 });
 

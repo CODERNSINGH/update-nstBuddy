@@ -1,71 +1,234 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { questionsApi, noticesApi, authApi } from '../services/api';
-import { Question, Notice, Admin } from '../types';
-import { Plus, Edit, Trash2, LogOut, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../config/firebase';
+import { Plus, Edit, Trash2, LogOut, Users, TrendingUp, BookOpen, MapPin, Filter } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+interface Campus {
+    id: string;
+    name: string;
+    slug: string;
+    imageUrl?: string;
+    questionCount: number;
+}
+
+interface Question {
+    id: string;
+    questionName: string;
+    subject: string;
+    topic: string;
+    link: string;
+    semester: number;
+    campus: {
+        name: string;
+        slug: string;
+    };
+    contributor: {
+        name: string;
+        email: string;
+        picture?: string;
+    };
+    isApproved: boolean;
+    createdAt: string;
+}
+
+interface LeaderboardEntry {
+    rank: number;
+    name: string;
+    email: string;
+    picture?: string;
+    contributionCount: number;
+    contributionPoints: number;
+}
 
 const AdminDashboard: React.FC = () => {
     const { user, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState<'questions' | 'notices' | 'contributors'>('questions');
-    const [questions, setQuestions] = useState<Question[]>([]);
-    const [notices, setNotices] = useState<Notice[]>([]);
-    const [admins, setAdmins] = useState<Admin[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [showQuestionForm, setShowQuestionForm] = useState(false);
-    const [showNoticeForm, setShowNoticeForm] = useState(false);
-    const [showContributorForm, setShowContributorForm] = useState(false);
-    const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-    const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
     const navigate = useNavigate();
 
-    // Question form state
+    // State
+    const [activeTab, setActiveTab] = useState<'overview' | 'questions' | 'leaderboard'>('overview');
+    const [campuses, setCampuses] = useState<Campus[]>([]);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    // Filters
+    const [selectedCampus, setSelectedCampus] = useState<string>('');
+    const [selectedSemester, setSelectedSemester] = useState<string>('');
+    const [selectedSubject, setSelectedSubject] = useState<string>('');
+    const [subjects, setSubjects] = useState<string[]>([]);
+
+    // Form states
+    const [showQuestionForm, setShowQuestionForm] = useState(false);
+    const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [questionForm, setQuestionForm] = useState({
+        campusSlug: '',
+        semester: '',
         questionName: '',
         subject: '',
         topic: '',
-        link: '',
-        semester: 4
+        link: ''
     });
 
-    // Notice form state
-    const [noticeForm, setNoticeForm] = useState({
-        title: '',
-        content: '',
-        priority: 'normal',
-        expiresAt: ''
-    });
-
-    // Contributor form state
-    const [contributorForm, setContributorForm] = useState({
-        email: '',
-        uniqueKey: '',
-        name: ''
+    // Stats
+    const [stats, setStats] = useState({
+        totalQuestions: 0,
+        totalContributors: 0,
+        totalCampuses: 0
     });
 
     useEffect(() => {
-        fetchData();
-    }, [activeTab]);
+        fetchCampuses();
+        fetchLeaderboard();
+    }, []);
 
-    const fetchData = async () => {
-        setLoading(true);
+    useEffect(() => {
+        if (activeTab === 'questions') {
+            fetchQuestions();
+            fetchFilters();
+        }
+    }, [activeTab, selectedCampus, selectedSemester, selectedSubject]);
+
+    const fetchCampuses = async () => {
         try {
-            if (activeTab === 'questions') {
-                const data = await questionsApi.getAll({ semester: 4 });
-                setQuestions(data);
-            } else if (activeTab === 'notices') {
-                const data = await noticesApi.getAll();
-                setNotices(data);
-            } else if (activeTab === 'contributors') {
-                const data = await authApi.getAdmins();
-                setAdmins(data);
+            const response = await axios.get(`${API_URL}/campuses`);
+            if (response.data.success) {
+                setCampuses(response.data.campuses);
+                setStats(prev => ({
+                    ...prev,
+                    totalCampuses: response.data.campuses.length,
+                    totalQuestions: response.data.campuses.reduce((sum: number, c: Campus) => sum + c.questionCount, 0)
+                }));
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error fetching campuses:', error);
+        }
+    };
+
+    const fetchQuestions = async () => {
+        setLoading(true);
+        try {
+            const params: any = {};
+            if (selectedCampus) params.campus = selectedCampus;
+            if (selectedSemester) params.semester = selectedSemester;
+            if (selectedSubject) params.subject = selectedSubject;
+
+            const response = await axios.get(`${API_URL}/questions`, { params });
+            if (response.data.success) {
+                setQuestions(response.data.questions);
+            }
+        } catch (error) {
+            console.error('Error fetching questions:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchFilters = async () => {
+        try {
+            const params: any = {};
+            if (selectedCampus) params.campus = selectedCampus;
+            if (selectedSemester) params.semester = selectedSemester;
+
+            const response = await axios.get(`${API_URL}/questions/filters`, { params });
+            if (response.data.success) {
+                setSubjects(response.data.subjects);
+            }
+        } catch (error) {
+            console.error('Error fetching filters:', error);
+        }
+    };
+
+    const fetchLeaderboard = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/contributions/leaderboard?limit=20`);
+            if (response.data.success) {
+                setLeaderboard(response.data.leaderboard);
+                setStats(prev => ({
+                    ...prev,
+                    totalContributors: response.data.leaderboard.length
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+        }
+    };
+
+    const handleQuestionSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const firebaseUser = auth.currentUser;
+            if (!firebaseUser) return;
+
+            const token = await firebaseUser.getIdToken();
+
+            if (editingQuestion) {
+                await axios.put(
+                    `${API_URL}/questions/${editingQuestion.id}`,
+                    questionForm,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            } else {
+                await axios.post(
+                    `${API_URL}/questions`,
+                    questionForm,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            }
+
+            setShowQuestionForm(false);
+            setEditingQuestion(null);
+            setQuestionForm({
+                campusSlug: '',
+                semester: '',
+                questionName: '',
+                subject: '',
+                topic: '',
+                link: ''
+            });
+            fetchQuestions();
+            fetchCampuses();
+        } catch (error: any) {
+            console.error('Error saving question:', error);
+            alert(error.response?.data?.error || 'Failed to save question');
+        }
+    };
+
+    const handleDeleteQuestion = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this question?')) return;
+
+        try {
+            const firebaseUser = auth.currentUser;
+            if (!firebaseUser) return;
+
+            const token = await firebaseUser.getIdToken();
+            await axios.delete(`${API_URL}/questions/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            fetchQuestions();
+            fetchCampuses();
+        } catch (error) {
+            console.error('Error deleting question:', error);
+            alert('Failed to delete question');
+        }
+    };
+
+    const startEditQuestion = (question: Question) => {
+        setEditingQuestion(question);
+        setQuestionForm({
+            campusSlug: question.campus.slug,
+            semester: question.semester.toString(),
+            questionName: question.questionName,
+            subject: question.subject,
+            topic: question.topic,
+            link: question.link
+        });
+        setShowQuestionForm(true);
     };
 
     const handleLogout = async () => {
@@ -73,110 +236,17 @@ const AdminDashboard: React.FC = () => {
         navigate('/');
     };
 
-    const handleQuestionSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            if (editingQuestion) {
-                await questionsApi.update(editingQuestion.id, questionForm);
-            } else {
-                await questionsApi.create(questionForm);
-            }
-            setShowQuestionForm(false);
-            setEditingQuestion(null);
-            setQuestionForm({ questionName: '', subject: '', topic: '', link: '', semester: 4 });
-            fetchData();
-        } catch (error) {
-            console.error('Error saving question:', error);
-            alert('Failed to save question');
-        }
-    };
-
-    const handleNoticeSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            if (editingNotice) {
-                await noticesApi.update(editingNotice.id, { ...noticeForm, isActive: true });
-            } else {
-                await noticesApi.create(noticeForm);
-            }
-            setShowNoticeForm(false);
-            setEditingNotice(null);
-            setNoticeForm({ title: '', content: '', priority: 'normal', expiresAt: '' });
-            fetchData();
-        } catch (error) {
-            console.error('Error saving notice:', error);
-            alert('Failed to save notice');
-        }
-    };
-
-    const handleDeleteQuestion = async (id: string) => {
-        if (confirm('Are you sure you want to delete this question?')) {
-            try {
-                await questionsApi.delete(id);
-                fetchData();
-            } catch (error) {
-                console.error('Error deleting question:', error);
-                alert('Failed to delete question');
-            }
-        }
-    };
-
-    const handleDeleteNotice = async (id: string) => {
-        if (confirm('Are you sure you want to delete this notice?')) {
-            try {
-                await noticesApi.delete(id);
-                fetchData();
-            } catch (error) {
-                console.error('Error deleting notice:', error);
-                alert('Failed to delete notice');
-            }
-        }
-    };
-
-    const startEditQuestion = (question: Question) => {
-        setEditingQuestion(question);
-        setQuestionForm({
-            questionName: question.questionName,
-            subject: question.subject,
-            topic: question.topic,
-            link: question.link,
-            semester: question.semester
-        });
-        setShowQuestionForm(true);
-    };
-
-    const startEditNotice = (notice: Notice) => {
-        setEditingNotice(notice);
-        setNoticeForm({
-            title: notice.title,
-            content: notice.content,
-            priority: notice.priority,
-            expiresAt: notice.expiresAt ? new Date(notice.expiresAt).toISOString().split('T')[0] : ''
-        });
-        setShowNoticeForm(true);
-    };
-
-    const handleContributorSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await authApi.setupAdmin(contributorForm.email, contributorForm.uniqueKey, contributorForm.name);
-            setShowContributorForm(false);
-            setContributorForm({ email: '', uniqueKey: '', name: '' });
-            fetchData();
-            alert('Contributor added successfully!');
-        } catch (error) {
-            console.error('Error adding contributor:', error);
-            alert('Failed to add contributor');
-        }
-    };
-
     return (
         <Layout>
+            {/* Header */}
             <div className="mb-8 flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <div>
+                    <h1 className="text-4xl font-bold text-black">Admin Dashboard</h1>
+                    <p className="text-gray-600 mt-1 text-lg">NST Buddy 2.0 - Multi-Campus Management</p>
+                </div>
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-900 text-white rounded-lg transition-colors font-medium"
                 >
                     <LogOut className="w-4 h-4" />
                     Logout
@@ -186,27 +256,27 @@ const AdminDashboard: React.FC = () => {
             {/* Tabs */}
             <div className="flex gap-4 mb-6 border-b">
                 <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`px-4 py-2 font-medium transition-colors ${activeTab === 'overview'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                >
+                    Overview
+                </button>
+                <button
                     onClick={() => setActiveTab('questions')}
                     className={`px-4 py-2 font-medium transition-colors ${activeTab === 'questions'
-                        ? 'text-purple-600 border-b-2 border-purple-600'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
                         : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     Questions
                 </button>
                 <button
-                    onClick={() => setActiveTab('notices')}
-                    className={`px-4 py-2 font-medium transition-colors ${activeTab === 'notices'
-                        ? 'text-purple-600 border-b-2 border-purple-600'
-                        : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                >
-                    Notices
-                </button>
-                <button
-                    onClick={() => setActiveTab('contributors')}
-                    className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'contributors'
-                        ? 'text-purple-600 border-b-2 border-purple-600'
+                    onClick={() => setActiveTab('leaderboard')}
+                    className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'leaderboard'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
                         : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
@@ -215,74 +285,288 @@ const AdminDashboard: React.FC = () => {
                 </button>
             </div>
 
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+                <div>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-gradient-to-br from-blue-500 to-pink-500 rounded-xl p-6 text-white">
+                            <div className="flex items-center justify-between mb-4">
+                                <BookOpen className="w-8 h-8" />
+                                <span className="text-3xl font-bold">{stats.totalQuestions}</span>
+                            </div>
+                            <h3 className="text-lg font-semibold">Total Questions</h3>
+                            <p className="text-sm opacity-90">Across all campuses</p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+                            <div className="flex items-center justify-between mb-4">
+                                <MapPin className="w-8 h-8" />
+                                <span className="text-3xl font-bold">{stats.totalCampuses}</span>
+                            </div>
+                            <h3 className="text-lg font-semibold">Active Campuses</h3>
+                            <p className="text-sm opacity-90">Delhi NCR, Pune, Bangalore</p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-6 text-white">
+                            <div className="flex items-center justify-between mb-4">
+                                <TrendingUp className="w-8 h-8" />
+                                <span className="text-3xl font-bold">{stats.totalContributors}</span>
+                            </div>
+                            <h3 className="text-lg font-semibold">Contributors</h3>
+                            <p className="text-sm opacity-90">Active contributors</p>
+                        </div>
+                    </div>
+
+                    {/* Campus Cards */}
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Campus Overview</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {campuses.map((campus) => (
+                            <div key={campus.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                                {/* Campus Image */}
+                                <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                    {campus.imageUrl ? (
+                                        <img
+                                            src={campus.imageUrl}
+                                            alt={campus.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full opacity-50"></div>
+                                    )}
+                                </div>
+
+                                {/* Campus Info */}
+                                <div className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-900">
+                                            Newton School of Technology'{campus.name.includes('24') ? campus.name.split("'")[1] : '24'}
+                                        </h3>
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <MapPin className="w-5 h-5 text-gray-600" />
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                                            Enrolled
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-blue-600 mb-4">
+                                        <BookOpen className="w-5 h-5" />
+                                        <span className="text-2xl font-bold">{campus.questionCount}</span>
+                                        <span className="text-gray-600">questions</span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            setSelectedCampus(campus.slug);
+                                            setActiveTab('questions');
+                                        }}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        Continue Learning
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Questions Tab */}
             {activeTab === 'questions' && (
                 <div>
+                    {/* Filters */}
+                    <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Filter className="w-5 h-5 text-gray-600" />
+                            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Campus</label>
+                                <select
+                                    value={selectedCampus}
+                                    onChange={(e) => setSelectedCampus(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">All Campuses</option>
+                                    {campuses.map((campus) => (
+                                        <option key={campus.id} value={campus.slug}>
+                                            {campus.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Semester</label>
+                                <select
+                                    value={selectedSemester}
+                                    onChange={(e) => setSelectedSemester(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">All Semesters</option>
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                                        <option key={sem} value={sem}>
+                                            Semester {sem}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                                <select
+                                    value={selectedSubject}
+                                    onChange={(e) => setSelectedSubject(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">All Subjects</option>
+                                    {subjects.map((subject) => (
+                                        <option key={subject} value={subject}>
+                                            {subject}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex items-end">
+                                <button
+                                    onClick={() => {
+                                        setSelectedCampus('');
+                                        setSelectedSemester('');
+                                        setSelectedSubject('');
+                                    }}
+                                    className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Add Question Button */}
                     <div className="mb-6">
                         <button
                             onClick={() => {
                                 setShowQuestionForm(!showQuestionForm);
                                 setEditingQuestion(null);
-                                setQuestionForm({ questionName: '', subject: '', topic: '', link: '', semester: 4 });
+                                setQuestionForm({
+                                    campusSlug: '',
+                                    semester: '',
+                                    questionName: '',
+                                    subject: '',
+                                    topic: '',
+                                    link: ''
+                                });
                             }}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                         >
                             <Plus className="w-4 h-4" />
                             Add Question
                         </button>
                     </div>
 
+                    {/* Question Form */}
                     {showQuestionForm && (
                         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                            <h2 className="text-xl font-bold mb-4">{editingQuestion ? 'Edit Question' : 'Add New Question'}</h2>
+                            <h2 className="text-xl font-bold mb-4">
+                                {editingQuestion ? 'Edit Question' : 'Add New Question'}
+                            </h2>
                             <form onSubmit={handleQuestionSubmit} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Campus *</label>
+                                        <select
+                                            value={questionForm.campusSlug}
+                                            onChange={(e) => setQuestionForm({ ...questionForm, campusSlug: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        >
+                                            <option value="">Select Campus</option>
+                                            {campuses.map((campus) => (
+                                                <option key={campus.id} value={campus.slug}>
+                                                    {campus.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
+                                        <select
+                                            value={questionForm.semester}
+                                            onChange={(e) => setQuestionForm({ ...questionForm, semester: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        >
+                                            <option value="">Select Semester</option>
+                                            {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                                                <option key={sem} value={sem}>
+                                                    Semester {sem}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Question Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Question Title *</label>
                                     <input
                                         type="text"
                                         value={questionForm.questionName}
                                         onChange={(e) => setQuestionForm({ ...questionForm, questionName: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
                                         <input
                                             type="text"
                                             value={questionForm.subject}
                                             onChange={(e) => setQuestionForm({ ...questionForm, subject: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                             required
                                         />
                                     </div>
+
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Topic *</label>
                                         <input
                                             type="text"
                                             value={questionForm.topic}
                                             onChange={(e) => setQuestionForm({ ...questionForm, topic: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                             required
                                         />
                                     </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Link (Most Important)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Link *</label>
                                     <input
                                         type="url"
                                         value={questionForm.link}
                                         onChange={(e) => setQuestionForm({ ...questionForm, link: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                         placeholder="https://..."
                                         required
                                     />
                                 </div>
+
                                 <div className="flex gap-4">
                                     <button
                                         type="submit"
-                                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                                     >
                                         {editingQuestion ? 'Update' : 'Add'} Question
                                     </button>
@@ -301,36 +585,72 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Questions List */}
                     {loading ? (
-                        <p className="text-center text-gray-500">Loading...</p>
+                        <div className="text-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        </div>
+                    ) : questions.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-50 rounded-xl">
+                            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold text-gray-700 mb-2">No questions found</h3>
+                            <p className="text-gray-600">Try adjusting your filters or add a new question</p>
+                        </div>
                     ) : (
                         <div className="bg-white rounded-lg shadow-md overflow-hidden">
                             <table className="w-full">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Question</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campus</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Semester</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Topic</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contributor</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {questions.map((question) => (
-                                        <tr key={question.id}>
-                                            <td className="px-6 py-4 text-sm text-gray-900">{question.questionName}</td>
+                                        <tr key={question.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900">{question.questionName}</div>
+                                                <div className="text-xs text-gray-500">{question.topic}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">{question.campus.name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">Sem {question.semester}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{question.subject}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">{question.topic}</td>
-                                            <td className="px-6 py-4 text-sm">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    {question.contributor.picture ? (
+                                                        <img
+                                                            src={question.contributor.picture}
+                                                            alt={question.contributor.name}
+                                                            className="w-6 h-6 rounded-full"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-blue-700 text-xs font-semibold">
+                                                            {question.contributor.name.charAt(0)}
+                                                        </div>
+                                                    )}
+                                                    <div className="text-sm">
+                                                        <div className="font-medium text-gray-900">{question.contributor.name}</div>
+                                                        <div className="text-xs text-gray-500">{question.contributor.email}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => startEditQuestion(question)}
                                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                                                        title="Edit"
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteQuestion(question.id)}
                                                         className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                                        title="Delete"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -345,235 +665,55 @@ const AdminDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* Notices Tab */}
-            {activeTab === 'notices' && (
+            {/* Leaderboard Tab */}
+            {activeTab === 'leaderboard' && (
                 <div>
-                    <div className="mb-6">
-                        <button
-                            onClick={() => {
-                                setShowNoticeForm(!showNoticeForm);
-                                setEditingNotice(null);
-                                setNoticeForm({ title: '', content: '', priority: 'normal', expiresAt: '' });
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Notice
-                        </button>
-                    </div>
-
-                    {showNoticeForm && (
-                        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                            <h2 className="text-xl font-bold mb-4">{editingNotice ? 'Edit Notice' : 'Add New Notice'}</h2>
-                            <form onSubmit={handleNoticeSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                                    <input
-                                        type="text"
-                                        value={noticeForm.title}
-                                        onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                                    <textarea
-                                        value={noticeForm.content}
-                                        onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        rows={4}
-                                        required
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                                        <select
-                                            value={noticeForm.priority}
-                                            onChange={(e) => setNoticeForm({ ...noticeForm, priority: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        >
-                                            <option value="low">Low</option>
-                                            <option value="normal">Normal</option>
-                                            <option value="high">High</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (Optional)</label>
-                                        <input
-                                            type="date"
-                                            value={noticeForm.expiresAt}
-                                            onChange={(e) => setNoticeForm({ ...noticeForm, expiresAt: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex gap-4">
-                                    <button
-                                        type="submit"
-                                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                                    >
-                                        {editingNotice ? 'Update' : 'Add'} Notice
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowNoticeForm(false);
-                                            setEditingNotice(null);
-                                        }}
-                                        className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {loading ? (
-                        <p className="text-center text-gray-500">Loading...</p>
-                    ) : (
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Top Contributors</h2>
                         <div className="space-y-4">
-                            {notices.map((notice) => (
-                                <div key={notice.id} className="bg-white p-6 rounded-lg shadow-md">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-lg font-bold text-gray-900">{notice.title}</h3>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => startEditNotice(notice)}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteNotice(notice.id)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                            {leaderboard.map((entry) => (
+                                <div
+                                    key={entry.rank}
+                                    className={`flex items-center gap-4 p-4 rounded-lg ${entry.rank <= 3
+                                        ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200'
+                                        : 'bg-gray-50'
+                                        }`}
+                                >
+                                    <div
+                                        className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${entry.rank === 1
+                                            ? 'bg-yellow-400 text-white'
+                                            : entry.rank === 2
+                                                ? 'bg-gray-300 text-white'
+                                                : entry.rank === 3
+                                                    ? 'bg-orange-400 text-white'
+                                                    : 'bg-gray-200 text-gray-600'
+                                            }`}
+                                    >
+                                        {entry.rank}
                                     </div>
-                                    <p className="text-gray-700 mb-2">{notice.content}</p>
-                                    <div className="flex gap-4 text-sm text-gray-500">
-                                        <span className={`px-2 py-1 rounded ${notice.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                            notice.priority === 'normal' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-yellow-100 text-yellow-700'
-                                            }`}>
-                                            {notice.priority.toUpperCase()}
-                                        </span>
-                                        <span>{notice.isActive ? '✓ Active' : '✗ Inactive'}</span>
-                                        {notice.expiresAt && (
-                                            <span>Expires: {new Date(notice.expiresAt).toLocaleDateString()}</span>
-                                        )}
+                                    {entry.picture ? (
+                                        <img
+                                            src={entry.picture}
+                                            alt={entry.name}
+                                            className="w-12 h-12 rounded-full"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-full bg-purple-200 flex items-center justify-center text-blue-700 font-semibold text-lg">
+                                            {entry.name.charAt(0)}
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        <p className="font-bold text-gray-900">{entry.name}</p>
+                                        <p className="text-sm text-gray-600">{entry.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-blue-600">{entry.contributionPoints}</p>
+                                        <p className="text-sm text-gray-600">{entry.contributionCount} questions</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    )}
-                </div>
-            )}
-
-            {/* Contributors Tab */}
-            {activeTab === 'contributors' && (
-                <div>
-                    <div className="mb-6">
-                        <button
-                            onClick={() => {
-                                setShowContributorForm(!showContributorForm);
-                                setContributorForm({ email: '', uniqueKey: '', name: '' });
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Contributor
-                        </button>
                     </div>
-
-                    {showContributorForm && (
-                        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                            <h2 className="text-xl font-bold mb-4">Add New Contributor</h2>
-                            <form onSubmit={handleContributorSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                    <input
-                                        type="text"
-                                        value={contributorForm.name}
-                                        onChange={(e) => setContributorForm({ ...contributorForm, name: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={contributorForm.email}
-                                        onChange={(e) => setContributorForm({ ...contributorForm, email: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Unique Key (Password)</label>
-                                    <input
-                                        type="password"
-                                        value={contributorForm.uniqueKey}
-                                        onChange={(e) => setContributorForm({ ...contributorForm, uniqueKey: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        placeholder="Enter a secure unique key"
-                                        required
-                                    />
-                                </div>
-                                <div className="flex gap-4">
-                                    <button
-                                        type="submit"
-                                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                                    >
-                                        Add Contributor
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowContributorForm(false)}
-                                        className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {loading ? (
-                        <p className="text-center text-gray-500">Loading...</p>
-                    ) : (
-                        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {admins.map((admin) => (
-                                        <tr key={admin.id}>
-                                            <td className="px-6 py-4 text-sm text-gray-900">{admin.name}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">{admin.email}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {new Date(admin.createdAt).toLocaleDateString('en-IN', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric'
-                                                })}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
                 </div>
             )}
         </Layout>
