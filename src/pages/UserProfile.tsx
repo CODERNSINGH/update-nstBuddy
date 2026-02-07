@@ -6,7 +6,7 @@ import { auth } from '../config/firebase';
 import { Trophy, TrendingUp, BookOpen, Award, ExternalLink, Calendar } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = 'https://update-nstbuddy.onrender.com/api';
 
 interface ContributionStats {
     name: string;
@@ -199,15 +199,15 @@ const UserProfile: React.FC = () => {
             </div>
 
             {/* Recent Contributions */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Recent Contributions</h3>
+            <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-lg p-8">
+                <h3 className="text-xl font-bold text-black mb-6">Recent Contributions</h3>
                 {stats.recentContributions.length === 0 ? (
                     <div className="text-center py-8">
                         <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-600 mb-4">No contributions yet</p>
                         <button
                             onClick={() => navigate('/contribute')}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                            className="bg-black hover:bg-gray-900 text-white font-medium py-2 px-6 rounded-lg transition-colors"
                         >
                             Make Your First Contribution
                         </button>
@@ -217,10 +217,10 @@ const UserProfile: React.FC = () => {
                         {stats.recentContributions.map((contribution) => (
                             <div
                                 key={contribution.id}
-                                className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border-2 border-gray-200"
                             >
                                 <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-1">
+                                    <h4 className="font-semibold text-black mb-1">
                                         {contribution.questionName}
                                     </h4>
                                     <div className="flex flex-wrap gap-2 text-sm text-gray-600">
@@ -243,11 +243,11 @@ const UserProfile: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {contribution.isApproved ? (
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                        <span className="px-3 py-1 bg-black text-white rounded-full text-sm font-medium">
                                             ✓ Approved
                                         </span>
                                     ) : (
-                                        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                                        <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-medium border-2 border-gray-300">
                                             ⏳ Pending
                                         </span>
                                     )}

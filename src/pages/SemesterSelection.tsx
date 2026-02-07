@@ -4,7 +4,7 @@ import Layout from '../components/layout/Layout';
 import { BookOpen, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = 'https://update-nstbuddy.onrender.com/api';
 
 interface SemesterStat {
     semester: number;

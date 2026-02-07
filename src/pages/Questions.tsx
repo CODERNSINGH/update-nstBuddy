@@ -4,7 +4,7 @@ import Layout from '../components/layout/Layout';
 import { BookOpen, ArrowLeft, ExternalLink, User } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = 'https://update-nstbuddy.onrender.com/api';
 
 interface Question {
     id: string;
@@ -118,8 +118,8 @@ const Questions: React.FC = () => {
                         <button
                             onClick={() => setSelectedSubject('')}
                             className={`px-4 py-2 rounded-lg font-medium transition-colors ${!selectedSubject
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                         >
                             All Subjects
@@ -129,8 +129,8 @@ const Questions: React.FC = () => {
                                 key={subject}
                                 onClick={() => setSelectedSubject(subject)}
                                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedSubject === subject
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 {subject}

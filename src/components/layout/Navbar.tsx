@@ -31,6 +31,19 @@ const Navbar: React.FC = () => {
             <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-semibold">2.0</span>
           </Link>
           <div className="flex items-center space-x-4 relative">
+            {/* Buy Me a Coffee Button */}
+            <a
+              href="https://pages.razorpay.com/nstbuddy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" />
+              </svg>
+              Buy Me a Coffee
+            </a>
+
             {/* Contribute Link */}
             <Link
               to="/contribute"

@@ -6,7 +6,7 @@ import { auth } from '../config/firebase';
 import { Plus, Edit, Trash2, LogOut, Users, TrendingUp, BookOpen, MapPin, Filter } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = 'https://update-nstbuddy.onrender.com/api';
 
 interface Campus {
     id: string;
@@ -668,25 +668,25 @@ const AdminDashboard: React.FC = () => {
             {/* Leaderboard Tab */}
             {activeTab === 'leaderboard' && (
                 <div>
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Top Contributors</h2>
+                    <div className="bg-white border-2 border-gray-200 rounded-xl shadow-lg p-6">
+                        <h2 className="text-2xl font-bold text-black mb-6">Top Contributors</h2>
                         <div className="space-y-4">
                             {leaderboard.map((entry) => (
                                 <div
                                     key={entry.rank}
                                     className={`flex items-center gap-4 p-4 rounded-lg ${entry.rank <= 3
-                                        ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200'
-                                        : 'bg-gray-50'
+                                            ? 'bg-black text-white border-2 border-gray-800'
+                                            : 'bg-gray-50 border-2 border-gray-200'
                                         }`}
                                 >
                                     <div
                                         className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${entry.rank === 1
-                                            ? 'bg-yellow-400 text-white'
-                                            : entry.rank === 2
-                                                ? 'bg-gray-300 text-white'
-                                                : entry.rank === 3
-                                                    ? 'bg-orange-400 text-white'
-                                                    : 'bg-gray-200 text-gray-600'
+                                                ? 'bg-yellow-400 text-black'
+                                                : entry.rank === 2
+                                                    ? 'bg-gray-300 text-black'
+                                                    : entry.rank === 3
+                                                        ? 'bg-white text-black border-2 border-gray-300'
+                                                        : 'bg-gray-200 text-gray-600'
                                             }`}
                                     >
                                         {entry.rank}
@@ -698,17 +698,26 @@ const AdminDashboard: React.FC = () => {
                                             className="w-12 h-12 rounded-full"
                                         />
                                     ) : (
-                                        <div className="w-12 h-12 rounded-full bg-purple-200 flex items-center justify-center text-blue-700 font-semibold text-lg">
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg ${entry.rank <= 3 ? 'bg-white text-black' : 'bg-gray-200 text-black'
+                                            }`}>
                                             {entry.name.charAt(0)}
                                         </div>
                                     )}
                                     <div className="flex-1">
-                                        <p className="font-bold text-gray-900">{entry.name}</p>
-                                        <p className="text-sm text-gray-600">{entry.email}</p>
+                                        <p className={`font-bold ${entry.rank <= 3 ? 'text-white' : 'text-black'}`}>
+                                            {entry.name}
+                                        </p>
+                                        <p className={`text-sm ${entry.rank <= 3 ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {entry.email}
+                                        </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-2xl font-bold text-blue-600">{entry.contributionPoints}</p>
-                                        <p className="text-sm text-gray-600">{entry.contributionCount} questions</p>
+                                        <p className={`text-2xl font-bold ${entry.rank <= 3 ? 'text-yellow-400' : 'text-black'}`}>
+                                            {entry.contributionPoints}
+                                        </p>
+                                        <p className={`text-sm ${entry.rank <= 3 ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {entry.contributionCount} questions
+                                        </p>
                                     </div>
                                 </div>
                             ))}
