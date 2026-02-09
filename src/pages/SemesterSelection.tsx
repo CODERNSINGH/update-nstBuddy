@@ -36,7 +36,7 @@ const SemesterSelection: React.FC = () => {
                 setSemesters(response.data.semesters);
             }
         } catch (error) {
-            console.error('Error fetching semester stats:', error);
+            // Error fetching semester stats silently
         } finally {
             setLoading(false);
         }

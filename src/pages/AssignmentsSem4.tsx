@@ -40,7 +40,7 @@ const AssignmentsSem4: React.FC = () => {
             const uniqueSubjects = ['All', ...new Set(data.map((q: Question) => q.subject))];
             setSubjects(uniqueSubjects);
         } catch (error) {
-            console.error('Error fetching questions:', error);
+            // Error fetching questions silently
         } finally {
             clearTimeout(renderMessageTimer);
             setLoading(false);

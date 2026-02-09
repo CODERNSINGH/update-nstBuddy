@@ -15,7 +15,6 @@ const AuthCallback: React.FC = () => {
 
             if (error) {
                 // Authentication failed
-                console.error('Authentication error:', error);
                 navigate('/login?error=' + error);
                 return;
             }

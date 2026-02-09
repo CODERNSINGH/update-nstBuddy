@@ -20,7 +20,7 @@ export enum SheetName {
   AP_LAB = "AP-Lab",
   ADA = "ADA",
   ADA_LAB = "ADA-Lab",
-  MathsIII =  "MathsIII",
+  MathsIII = "MathsIII",
   MathsIII_Lab = "MathsIII-Lab"
 }
 
@@ -35,13 +35,12 @@ export const fetchAssignments = async (
 ): Promise<Assignment[]> => {
   const range = buildRange(sheetName);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
-  
+
   try {
     const response = await axios.get(url);
     const rows = response.data.values;
 
     if (!rows || rows.length === 0) {
-      console.error(`No data found in the sheet: ${sheetName}`);
       return [];
     }
 
@@ -62,7 +61,6 @@ export const fetchAssignments = async (
 
     return data;
   } catch (error) {
-    console.error(`Error fetching data from ${sheetName}:`, error);
     return [];
   }
 };
@@ -73,11 +71,11 @@ export const fetchAllAssignments = async (): Promise<Assignment[]> => {
     const sheetNames = Object.values(SheetName);
     const promises = sheetNames.map(sheet => fetchAssignments(sheet));
     const results = await Promise.all(promises);
-    
+
     // Combine results from all sheets, giving each item a unique ID
     let allAssignments: Assignment[] = [];
     let idCounter = 1;
-    
+
     results.forEach(assignments => {
       const assignmentsWithId = assignments.map(assignment => ({
         ...assignment,
@@ -85,10 +83,9 @@ export const fetchAllAssignments = async (): Promise<Assignment[]> => {
       }));
       allAssignments = [...allAssignments, ...assignmentsWithId];
     });
-    
+
     return allAssignments;
   } catch (error) {
-    console.error("Error fetching data from all sheets:", error);
     return [];
   }
 };
@@ -96,12 +93,11 @@ export const fetchAllAssignments = async (): Promise<Assignment[]> => {
 // Function to get sheets metadata (optional, for more advanced functionality)
 export const fetchSheetsMetadata = async (): Promise<any> => {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${API_KEY}`;
-  
+
   try {
     const response = await axios.get(url);
     return response.data.sheets;
   } catch (error) {
-    console.error("Error fetching sheets metadata:", error);
     return [];
   }
 };

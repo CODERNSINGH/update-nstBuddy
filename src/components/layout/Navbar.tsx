@@ -24,10 +24,11 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold">
-              <span className="text-white">NST</span>
-              <span className="text-purple-500">Buddy</span>
-            </span>
+            <img
+              src="/logo.svg"
+              alt="NST Buddy"
+              className="h-10 w-auto"
+            />
             <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-semibold">2.0</span>
           </Link>
           <div className="flex items-center space-x-4 relative">
@@ -56,15 +57,7 @@ const Navbar: React.FC = () => {
             </Link>
 
             {/* Profile Link */}
-            <Link
-              to="/profile"
-              className="text-gray-300 hover:text-white font-medium flex items-center gap-1"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Profile
-            </Link>
+            
 
             {/* Admin Link - Only show for admin users */}
             {user?.isAdmin && (

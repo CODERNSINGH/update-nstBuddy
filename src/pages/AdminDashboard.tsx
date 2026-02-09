@@ -105,7 +105,7 @@ const AdminDashboard: React.FC = () => {
                 }));
             }
         } catch (error) {
-            console.error('Error fetching campuses:', error);
+            // Error fetching campuses silently
         }
     };
 
@@ -122,7 +122,7 @@ const AdminDashboard: React.FC = () => {
                 setQuestions(response.data.questions);
             }
         } catch (error) {
-            console.error('Error fetching questions:', error);
+            // Error fetching questions silently
         } finally {
             setLoading(false);
         }
@@ -139,7 +139,7 @@ const AdminDashboard: React.FC = () => {
                 setSubjects(response.data.subjects);
             }
         } catch (error) {
-            console.error('Error fetching filters:', error);
+            // Error fetching filters silently
         }
     };
 
@@ -154,7 +154,7 @@ const AdminDashboard: React.FC = () => {
                 }));
             }
         } catch (error) {
-            console.error('Error fetching leaderboard:', error);
+            // Error fetching leaderboard silently
         }
     };
 
@@ -193,7 +193,6 @@ const AdminDashboard: React.FC = () => {
             fetchQuestions();
             fetchCampuses();
         } catch (error: any) {
-            console.error('Error saving question:', error);
             alert(error.response?.data?.error || 'Failed to save question');
         }
     };
@@ -213,7 +212,6 @@ const AdminDashboard: React.FC = () => {
             fetchQuestions();
             fetchCampuses();
         } catch (error) {
-            console.error('Error deleting question:', error);
             alert('Failed to delete question');
         }
     };
@@ -675,18 +673,18 @@ const AdminDashboard: React.FC = () => {
                                 <div
                                     key={entry.rank}
                                     className={`flex items-center gap-4 p-4 rounded-lg ${entry.rank <= 3
-                                            ? 'bg-black text-white border-2 border-gray-800'
-                                            : 'bg-gray-50 border-2 border-gray-200'
+                                        ? 'bg-black text-white border-2 border-gray-800'
+                                        : 'bg-gray-50 border-2 border-gray-200'
                                         }`}
                                 >
                                     <div
                                         className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${entry.rank === 1
-                                                ? 'bg-yellow-400 text-black'
-                                                : entry.rank === 2
-                                                    ? 'bg-gray-300 text-black'
-                                                    : entry.rank === 3
-                                                        ? 'bg-white text-black border-2 border-gray-300'
-                                                        : 'bg-gray-200 text-gray-600'
+                                            ? 'bg-yellow-400 text-black'
+                                            : entry.rank === 2
+                                                ? 'bg-gray-300 text-black'
+                                                : entry.rank === 3
+                                                    ? 'bg-white text-black border-2 border-gray-300'
+                                                    : 'bg-gray-200 text-gray-600'
                                             }`}
                                     >
                                         {entry.rank}

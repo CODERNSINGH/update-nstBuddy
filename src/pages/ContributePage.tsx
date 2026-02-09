@@ -51,7 +51,7 @@ const ContributePage: React.FC = () => {
                 setCampuses(response.data.campuses);
             }
         } catch (error) {
-            console.error('Error fetching campuses:', error);
+            // Error fetching campuses silently
         }
     };
 
@@ -62,7 +62,7 @@ const ContributePage: React.FC = () => {
                 setLeaderboard(response.data.leaderboard);
             }
         } catch (error) {
-            console.error('Error fetching leaderboard:', error);
+            // Error fetching leaderboard silently
         }
     };
 
@@ -132,7 +132,6 @@ const ContributePage: React.FC = () => {
                 setTimeout(() => setSuccess(false), 5000);
             }
         } catch (error: any) {
-            console.error('Error contributing question:', error);
             alert(error.response?.data?.error || 'Failed to contribute question');
         } finally {
             setLoading(false);
@@ -178,7 +177,7 @@ const ContributePage: React.FC = () => {
                     <p className="text-base md:text-lg text-gray-300 max-w-2xl mx-auto mb-4">
                         Contribute questions, help your peers, and climb the leaderboard to win amazing rewards
                     </p>
-                    <p className="text-sm text-gray-400 mb-6">
+                    <p className="text-sm text-gray-400 flex justify-center items-center gap-2">
                         Special thanks to{' '}
                         <a
                             href="https://linkedin.com/in/pranav-singh-developer/"
@@ -188,8 +187,37 @@ const ContributePage: React.FC = () => {
                         >
                             Pranav Singh
                         </a>
+                        &
+                        <a
+                            href="https://linkedin.com/in/codernsingh"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline font-medium"
+                        >
+                            Narendra Singh
+                        </a>
+                        &
+                        <a
+                            href="https://www.linkedin.com/in/keshavrajput/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline font-medium"
+                        >
+                            Keshav
+                        </a>
+
+                        &
+                        <a
+                            href="https://www.linkedin.com/in/abhijeet-kumar79/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline font-medium"
+                        >
+                            Abhijeet Kumar
+                        </a>
+
                     </p>
-                    <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+                    {/* <div className="flex flex-wrap justify-center gap-4 md:gap-8">
                         <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
                             <Star className="w-5 h-5 text-yellow-400" />
                             <span className="text-sm text-white font-medium">10 points per question</span>
@@ -202,7 +230,8 @@ const ContributePage: React.FC = () => {
                             <TrendingUp className="w-5 h-5 text-green-400" />
                             <span className="text-sm text-white font-medium">Top 10 winners</span>
                         </div>
-                    </div>
+                    </div> */}
+                    <p className="text-sm text-gray-400">*Terms and Conditions Apply</p>
                 </div>
             </div>
 

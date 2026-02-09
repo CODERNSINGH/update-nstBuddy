@@ -31,7 +31,7 @@ const CampusSelection: React.FC = () => {
                 setCampuses(response.data.campuses);
             }
         } catch (error) {
-            console.error('Error fetching campuses:', error);
+            // Error fetching campuses silently
         } finally {
             setLoading(false);
         }
@@ -143,7 +143,7 @@ const CampusSelection: React.FC = () => {
 
                                 {/* CTA */}
                                 <button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                                    Explore Campus →
+                                    View Solutions →
                                 </button>
                             </div>
                         </div>
@@ -152,7 +152,7 @@ const CampusSelection: React.FC = () => {
             </div>
 
             {/* Call to Action */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white text-center">
+            <div className="bg-black rounded-2xl p-8 text-white text-center">
                 <h2 className="text-3xl font-bold mb-4">Start Contributing Today!</h2>
                 <p className="text-lg mb-6 opacity-90">
                     Share your knowledge, help your peers, and win exciting prizes up to ₹5,000

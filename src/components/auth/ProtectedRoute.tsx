@@ -12,13 +12,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
     const { user, loading } = useAuth();
     const location = useLocation();
 
-    console.log('🔒 ProtectedRoute check:', {
-        path: location.pathname,
-        requireAdmin,
-        user: user ? { email: user.email, isAdmin: user.isAdmin } : null,
-        loading
-    });
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -28,13 +21,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
     }
 
     if (!user) {
-        console.log('❌ No user, redirecting to login');
         // Redirect to login page, but save the attempted location
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     if (requireAdmin && !user.isAdmin) {
-        console.log('❌ User is not admin, showing access denied');
         // User is logged in but not an admin
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -49,7 +40,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
         );
     }
 
-    console.log('✅ Access granted');
     return <>{children}</>;
 };
 

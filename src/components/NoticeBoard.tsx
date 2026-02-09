@@ -19,7 +19,7 @@ const NoticeBoard: React.FC = () => {
             const data = await noticesApi.getActive();
             setNotices(data);
         } catch (error) {
-            console.error('Error fetching notices:', error);
+            // Error fetching notices silently
         } finally {
             setLoading(false);
         }

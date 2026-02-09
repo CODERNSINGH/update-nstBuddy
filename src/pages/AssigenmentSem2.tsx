@@ -28,43 +28,43 @@ const AssigenmentSem2: React.FC = () => {
       try {
         // You can fetch from a specific sheet:
         // const data = await fetchAssignments(SheetName.DSA);
-        
+
         // Or fetch from all sheets:
         const data = await fetchAllAssignmentsSem2();
-        
+
         setAssignments(data);
         setFilteredAssignments(data);
       } catch (error) {
-        console.error("Error fetching assignments:", error);
+        // Error fetching assignments silently
       } finally {
         setLoading(false);
       }
     };
-    
+
     getAssignments();
   }, []);
 
   useEffect(() => {
     const uniqueSubjects = ['All', ...new Set(assignments.map(a => a.Subject || 'Unknown'))];
     setSubjects(uniqueSubjects);
-    
+
     const uniqueSheetSources = ['All', ...new Set(assignments.map(a => a.sheetSource || 'Unknown'))];
     setSheetSources(uniqueSheetSources);
   }, [assignments]);
 
   useEffect(() => {
     let result = assignments;
-    
+
     // Filter by subject
     if (selectedSubject !== 'All') {
       result = result.filter(a => a.Subject === selectedSubject);
     }
-    
+
     // Filter by sheet source
     if (selectedSheetSource !== 'All') {
       result = result.filter(a => a.sheetSource === selectedSheetSource);
     }
-    
+
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -73,16 +73,16 @@ const AssigenmentSem2: React.FC = () => {
         a.Topic?.toLowerCase().includes(term)
       );
     }
-    
+
     setFilteredAssignments(result);
   }, [selectedSubject, selectedSheetSource, searchTerm, assignments]);
 
   return (
     <Layout>
       {selectedAssignment ? (
-        <AssignmentDetail 
-          assignment={selectedAssignment} 
-          onBack={() => setSelectedAssignment(null)} 
+        <AssignmentDetail
+          assignment={selectedAssignment}
+          onBack={() => setSelectedAssignment(null)}
         />
       ) : (
         <>
@@ -92,27 +92,27 @@ const AssigenmentSem2: React.FC = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <SearchBar 
-              searchTerm={searchTerm} 
-              onSearchChange={setSearchTerm} 
+            <SearchBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
             />
-            
+
             <div className="flex flex-col sm:flex-row gap-4">
-              <SubjectFilter 
-                subjects={subjects} 
-                selectedSubject={selectedSubject} 
-                onSubjectChange={setSelectedSubject} 
+              <SubjectFilter
+                subjects={subjects}
+                selectedSubject={selectedSubject}
+                onSubjectChange={setSelectedSubject}
               />
-{/*               
+              {/*               
               <SheetSourceFilter
                 sheetSources={sheetSources}
                 selectedSheetSource={selectedSheetSource}
                 onSheetSourceChange={setSelectedSheetSource}
               /> */}
               <SheetSourceFilter
-              sheetSources={sheetSources}
-              selectedSheetSource={selectedSheetSource}
-              onSheetSourceChange={setSelectedSheetSource}
+                sheetSources={sheetSources}
+                selectedSheetSource={selectedSheetSource}
+                onSheetSourceChange={setSelectedSheetSource}
               />
             </div>
           </div>

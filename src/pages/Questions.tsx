@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { BookOpen, ArrowLeft, ExternalLink, User } from 'lucide-react';
+import { BookOpen, ArrowLeft, ExternalLink, User, Search } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = 'https://update-nstbuddy.onrender.com/api';
@@ -32,6 +32,7 @@ const Questions: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [selectedSubject, setSelectedSubject] = useState<string>('');
     const [subjects, setSubjects] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     useEffect(() => {
         fetchQuestions();
@@ -53,7 +54,7 @@ const Questions: React.FC = () => {
                 setQuestions(response.data.questions);
             }
         } catch (error) {
-            console.error('Error fetching questions:', error);
+            // Error fetching questions silently
         } finally {
             setLoading(false);
         }
@@ -68,7 +69,7 @@ const Questions: React.FC = () => {
                 setSubjects(response.data.subjects);
             }
         } catch (error) {
-            console.error('Error fetching filters:', error);
+            // Error fetching filters silently
         }
     };
 
@@ -111,6 +112,20 @@ const Questions: React.FC = () => {
                 </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="mb-6">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search questions by name, subject, or topic..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                </div>
+            </div>
+
             {/* Filters */}
             {subjects.length > 0 && (
                 <div className="mb-6">
@@ -141,7 +156,11 @@ const Questions: React.FC = () => {
             )}
 
             {/* Questions List */}
-            {questions.length === 0 ? (
+            {questions.filter(q =>
+                q.questionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                q.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                q.topic.toLowerCase().includes(searchQuery.toLowerCase())
+            ).length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-xl">
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -159,7 +178,11 @@ const Questions: React.FC = () => {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {questions.map((question) => (
+                    {questions.filter(q =>
+                        q.questionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        q.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        q.topic.toLowerCase().includes(searchQuery.toLowerCase())
+                    ).map((question) => (
                         <div
                             key={question.id}
                             className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6"

@@ -9,16 +9,11 @@ const Login: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    console.log('🔍 Login page - loading:', loading, 'user:', user?.email || 'none');
-
     // Redirect to home if already logged in
     useEffect(() => {
-        console.log('🔄 Login useEffect - loading:', loading, 'user:', user?.email || 'none');
-
         if (!loading && user) {
             // Get the page they were trying to visit, or default to home
             const from = (location.state as any)?.from?.pathname || '/';
-            console.log('✅ User is authenticated, redirecting to:', from);
             navigate(from, { replace: true });
         }
     }, [user, loading, navigate, location]);

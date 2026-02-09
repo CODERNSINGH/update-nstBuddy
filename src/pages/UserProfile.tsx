@@ -54,7 +54,7 @@ const UserProfile: React.FC = () => {
                 setStats(response.data.stats);
             }
         } catch (error) {
-            console.error('Error fetching stats:', error);
+            // Error fetching stats silently
         } finally {
             setLoading(false);
         }
