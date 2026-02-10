@@ -12,6 +12,7 @@ interface Campus {
     id: string;
     name: string;
     slug: string;
+    description?: string;
 }
 
 interface LeaderboardEntry {
@@ -38,6 +39,8 @@ const ContributePage: React.FC = () => {
         topic: '',
         link: ''
     });
+
+    const [isCustomCourse, setIsCustomCourse] = useState(false);
 
     useEffect(() => {
         fetchCampuses();
@@ -139,10 +142,26 @@ const ContributePage: React.FC = () => {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+
+        // If campus is changed, check if it's a custom course
+        if (name === 'campusSlug') {
+            const selectedCampus = campuses.find(c => c.slug === value);
+            const isCustom = selectedCampus?.description?.toLowerCase().includes('custom course') || false;
+            setIsCustomCourse(isCustom);
+
+            // If custom course, set semester to "0", otherwise reset to empty
+            setFormData({
+                ...formData,
+                campusSlug: value,
+                semester: isCustom ? '0' : ''
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value
+            });
+        }
     };
 
     return (
@@ -271,26 +290,42 @@ const ContributePage: React.FC = () => {
                                 </select>
                             </div>
 
-                            {/* Semester Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Semester *
-                                </label>
-                                <select
-                                    name="semester"
-                                    value={formData.semester}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    required
-                                >
-                                    <option value="">Select Semester</option>
-                                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                                        <option key={sem} value={sem}>
-                                            Semester {sem}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            {/* Semester Selection - Conditional */}
+                            {!isCustomCourse ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Semester *
+                                    </label>
+                                    <select
+                                        name="semester"
+                                        value={formData.semester}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
+                                    >
+                                        <option value="">Select Semester</option>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                                            <option key={sem} value={sem}>
+                                                Semester {sem}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Semester
+                                    </label>
+                                    <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                                        <span className="text-purple-700 font-medium flex items-center gap-2">
+                                            🎯 No Semester (default) - Custom Course
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        This campus uses a custom course structure without semesters
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Question Name */}
                             <div>

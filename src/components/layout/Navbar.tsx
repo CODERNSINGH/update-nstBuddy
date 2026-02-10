@@ -8,7 +8,7 @@ const Navbar: React.FC = () => {
   const { user } = useAuth();
 
   const developers = [
-    { name: 'Ranajeet Roy', link: 'https://www.linkedin.com/in/ranajeet-roy-3a5822323/', isTopContributor: true },
+    { name: 'Ranajeet Roy', link: 'https://www.linkedin.com/in/ranajeet-roy-3a5822323/', isTopContributor: false },
     { name: 'Narendra Singh', link: 'https://www.linkedin.com/in/codernsingh/' },
     { name: 'Keshav Rajput', link: 'https://www.linkedin.com/in/keshavrajput/' },
     { name: 'Pranav Singh', link: 'https://www.linkedin.com/in/pranav-singh-08155a244/' },
