@@ -10,6 +10,7 @@ import SubjectFilter from '../components/assignments/SubjectFilter';
 import { fetchAllAssignmentsSem2 } from '../services/sheetsApi2';
 import { Assignment } from '../types';
 import SheetSourceFilter from '../components/assignments/SheetSourceFilter';
+import { searchAssignments } from '../utils/searchUtils';
 
 const AssigenmentSem2: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -65,13 +66,9 @@ const AssigenmentSem2: React.FC = () => {
       result = result.filter(a => a.sheetSource === selectedSheetSource);
     }
 
-    // Filter by search term
+    // Enhanced fuzzy search filter
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(a =>
-        a.QuestionName?.toLowerCase().includes(term) ||
-        a.Topic?.toLowerCase().includes(term)
-      );
+      result = searchAssignments(result, searchTerm);
     }
 
     setFilteredAssignments(result);

@@ -6,6 +6,7 @@ import SearchBar from '../components/assignments/SearchBar';
 import SubjectFilter from '../components/assignments/SubjectFilter';
 import { fetchAssignments } from '../services/sheetsApi';
 import { Assignment } from '../types';
+import { searchAssignments } from '../utils/searchUtils';
 
 const Days100: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -34,12 +35,9 @@ const Days100: React.FC = () => {
     if (selectedSubject !== 'All') {
       result = result.filter(a => a.Subject === selectedSubject);
     }
+    // Enhanced fuzzy search filter
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(a =>
-        a.QuestionName?.toLowerCase().includes(term) ||
-        a.Topic?.toLowerCase().includes(term)
-      );
+      result = searchAssignments(result, searchTerm);
     }
     setFilteredAssignments(result);
   }, [selectedSubject, searchTerm, assignments]);
@@ -47,9 +45,9 @@ const Days100: React.FC = () => {
   return (
     <Layout>
       {selectedAssignment ? (
-        <AssignmentDetail 
-          assignment={selectedAssignment} 
-          onBack={() => setSelectedAssignment(null)} 
+        <AssignmentDetail
+          assignment={selectedAssignment}
+          onBack={() => setSelectedAssignment(null)}
         />
       ) : (
         <>
@@ -59,14 +57,14 @@ const Days100: React.FC = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <SearchBar 
-              searchTerm={searchTerm} 
-              onSearchChange={setSearchTerm} 
+            <SearchBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
             />
-            <SubjectFilter 
-              subjects={subjects} 
-              selectedSubject={selectedSubject} 
-              onSubjectChange={setSelectedSubject} 
+            <SubjectFilter
+              subjects={subjects}
+              selectedSubject={selectedSubject}
+              onSubjectChange={setSelectedSubject}
             />
           </div>
 

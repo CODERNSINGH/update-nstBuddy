@@ -8,6 +8,7 @@ import SubjectFilter from '../components/assignments/SubjectFilter';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { questionsApi } from '../services/api';
 import { Question } from '../types';
+import { fuzzyMatch } from '../utils/searchUtils';
 
 const AssignmentsSem4: React.FC = () => {
     const [questions, setQuestions] = useState<Question[]>([]);
@@ -37,7 +38,7 @@ const AssignmentsSem4: React.FC = () => {
             setFilteredQuestions(data);
 
             // Extract unique subjects
-            const uniqueSubjects = ['All', ...new Set(data.map((q: Question) => q.subject))];
+            const uniqueSubjects: string[] = ['All', ...Array.from(new Set(data.map((q: Question) => q.subject)))];
             setSubjects(uniqueSubjects);
         } catch (error) {
             // Error fetching questions silently
@@ -56,12 +57,12 @@ const AssignmentsSem4: React.FC = () => {
             result = result.filter(q => q.subject === selectedSubject);
         }
 
-        // Filter by search term
+        // Enhanced fuzzy search filter
         if (searchTerm) {
-            const term = searchTerm.toLowerCase();
             result = result.filter(q =>
-                q.questionName?.toLowerCase().includes(term) ||
-                q.topic?.toLowerCase().includes(term)
+                fuzzyMatch(q.questionName || '', searchTerm) ||
+                fuzzyMatch(q.topic || '', searchTerm) ||
+                fuzzyMatch(q.subject || '', searchTerm)
             );
         }
 
