@@ -16,6 +16,7 @@ import ContributePage from './pages/ContributePage';
 import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import Days100 from './pages/Days100';
+import TestAIPopup from './pages/TestAIPopup';
 
 // Initialize Google Analytics
 ReactGA.initialize('G-P95H63YPVW');
@@ -36,6 +37,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/contribute" element={<ProtectedRoute><ContributePage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       <Route path="/100days" element={<ProtectedRoute><Days100 /></ProtectedRoute>} />
+      <Route path="/test-popup" element={<TestAIPopup />} />
 
       {/* Admin routes */}
       <Route path="/admin/dashboard" element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>} />

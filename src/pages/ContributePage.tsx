@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../config/firebase';
-import { Trophy, TrendingUp, Award, Star, Loader2 } from 'lucide-react';
+import { Trophy, TrendingUp, Award, Star, Loader2, Brain } from 'lucide-react';
 import axios from 'axios';
+import AIUploadPopup from '../components/AIUploadPopup';
 
 const API_URL = 'https://update-nstbuddy.onrender.com/api';
 
@@ -30,6 +31,7 @@ const ContributePage: React.FC = () => {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [showAIUpload, setShowAIUpload] = useState(false);
 
     const [formData, setFormData] = useState({
         campusSlug: '',
@@ -254,6 +256,20 @@ const ContributePage: React.FC = () => {
                 </div>
             </div>
 
+            {/* AI Training Contribution Button */}
+            <div className="mb-8">
+                <button
+                    onClick={() => setShowAIUpload(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3"
+                >
+                    <Brain className="w-6 h-6" />
+                    <span className="text-base">Contribute to AI Model Training</span>
+                </button>
+                <p className="text-sm text-gray-600 mt-2 text-center">
+                    Help us build a smarter learning assistant by uploading course materials
+                </p>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Contribution Form */}
                 <div className="lg:col-span-2">
@@ -476,6 +492,12 @@ const ContributePage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* AI Upload Popup */}
+            <AIUploadPopup
+                isOpen={showAIUpload}
+                onClose={() => setShowAIUpload(false)}
+            />
         </Layout>
     );
 };

@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { BookOpen, Users, TrendingUp, MapPin } from 'lucide-react';
+import { BookOpen, Users, TrendingUp, MapPin, Brain } from 'lucide-react';
 import axios from 'axios';
+import AIUploadPopup from '../components/AIUploadPopup';
 
 // Animated Counter Hook
 const useAnimatedCounter = (end: number, duration: number = 2000, start: number = 0) => {
@@ -78,6 +79,7 @@ const CampusSelection: React.FC = () => {
     const navigate = useNavigate();
     const [campuses, setCampuses] = useState<Campus[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showAIUpload, setShowAIUpload] = useState(false);
 
     // Calculate stats for animated counters
     const totalQuestions = campuses.reduce((sum, campus) => sum + campus.questionCount, 0);
@@ -205,6 +207,30 @@ const CampusSelection: React.FC = () => {
                 </div>
             </div>
 
+            {/* AI Training Contribution Button */}
+            <div className="mb-12">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex-1 text-center md:text-left">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center justify-center md:justify-start gap-2">
+                                <Brain className="w-6 h-6 text-blue-600" />
+                                Help Train Our AI Learning Assistant
+                            </h3>
+                            <p className="text-gray-600 text-sm">
+                                Contribute course materials to help us build a smarter AI model powered by Llama 3.1
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowAIUpload(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
+                        >
+                            <Brain className="w-5 h-5" />
+                            Upload Materials
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Campus Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                 {campuses.map((campus) => (
@@ -249,11 +275,11 @@ const CampusSelection: React.FC = () => {
                                 {/* Semester Info or Custom Course Badge */}
                                 {campus.description.toLowerCase().includes('custom course') ? (
                                     <div className="mb-4 inline-block bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                         Custom Course - Direct Access
+                                        Custom Course - Direct Access
                                     </div>
                                 ) : (
                                     <div className="text-gray-500 text-sm mb-4">
-                                         8 Semesters Available
+                                        8 Semesters Available
                                     </div>
                                 )}
 
@@ -283,6 +309,12 @@ const CampusSelection: React.FC = () => {
                     Contribute Now
                 </button>
             </div>
+
+            {/* AI Upload Popup */}
+            <AIUploadPopup
+                isOpen={showAIUpload}
+                onClose={() => setShowAIUpload(false)}
+            />
         </Layout>
     );
 };
