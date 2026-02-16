@@ -15,28 +15,15 @@ export const uploadToCloudinary = async (
     userEmail: string
 ): Promise<{ success: boolean; url?: string; error?: string }> => {
     try {
-        // Get Firebase auth token
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-            return {
-                success: false,
-                error: 'You must be logged in to upload files'
-            };
-        }
-
-        const token = await currentUser.getIdToken();
-
         // Create form data
         const formData = new FormData();
         formData.append('file', file);
         formData.append('fileName', fileName);
+        formData.append('userEmail', userEmail);
 
-        // Upload to backend
+        // Upload to backend (no auth required)
         const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
             body: formData
         });
 

@@ -33,9 +33,9 @@ const upload = multer({
 /**
  * POST /api/upload
  * Upload a file to Cloudinary
- * Requires authentication
+ * No authentication required - email collected from form
  */
-router.post('/', verifyToken, upload.single('file'), async (req, res) => {
+router.post('/', upload.single('file'), async (req, res) => {
     try {
         // Check if file was uploaded
         if (!req.file) {
@@ -45,9 +45,9 @@ router.post('/', verifyToken, upload.single('file'), async (req, res) => {
             });
         }
 
-        // Get file name from request body
+        // Get file name and email from request body
         const fileName = req.body.fileName || req.file.originalname;
-        const userEmail = req.user.email;
+        const userEmail = req.body.userEmail || 'anonymous@nst.edu';
 
         console.log(`📤 Uploading file: ${fileName} for user: ${userEmail}`);
 
