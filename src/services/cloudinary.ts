@@ -1,6 +1,6 @@
 import { auth } from '../config/firebase';
 
-const UPLOAD_API_URL = 'http://localhost:5001/api/upload';
+const UPLOAD_API_URL = 'https://update-nstbuddy-kzzl.onrender.com/api/upload';
 
 /**
  * Upload a file to the backend which handles Cloudinary upload
