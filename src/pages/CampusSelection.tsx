@@ -85,7 +85,7 @@ const CampusSelection: React.FC = () => {
     const totalQuestions = campuses.reduce((sum, campus) => sum + campus.questionCount, 0);
     const totalCourses = campuses.length;
     const totalSubjects = campuses.length * 12;
-    const totalUsers = 1270;
+    const totalUsers = 1460;
 
     // Animated counters - must be called at top level (courses is NOT animated)
     const animatedTotalQuestions = useAnimatedCounter(totalQuestions);

@@ -5,6 +5,7 @@ import ReactGA from 'react-ga4';
 import usePageTracking from './hooks/usePageTracking';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ExamPopup from './components/layout/ExamPopup';
 
 // Pages
 import Login from './pages/Login';
@@ -52,6 +53,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
+        <ExamPopup />
         <AppRoutes />
       </AuthProvider>
     </Router>

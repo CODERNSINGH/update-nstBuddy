@@ -321,7 +321,7 @@ const AIUploadPopup: React.FC<AIUploadPopupProps> = ({ isOpen, onClose }) => {
                         />
                     </div>
 
-                    {/* Email (Editable) */}
+                    {/* Email (Read-only) */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Your Email
@@ -329,9 +329,8 @@ const AIUploadPopup: React.FC<AIUploadPopupProps> = ({ isOpen, onClose }) => {
                         <input
                             type="email"
                             value={userEmail}
-                            onChange={(e) => setUserEmail(e.target.value)}
-                            placeholder="your.email@nst.rishihood.edu.in"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            readOnly
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-600 text-sm"
                         />
                         <p className="text-xs text-gray-500 mt-1">
                             Your email will be used to track contributions
