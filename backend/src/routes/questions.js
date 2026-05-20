@@ -122,6 +122,56 @@ router.get('/filters', async (req, res) => {
     }
 });
 
+// GET /api/questions/solution - Find solution link by question name
+router.get('/solution', async (req, res) => {
+    try {
+        const { questionName } = req.query;
+
+        if (!questionName || typeof questionName !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'questionName query parameter is required'
+            });
+        }
+
+        const question = await prisma.question.findFirst({
+            where: {
+                isApproved: true,
+                questionName: {
+                    contains: questionName.trim(),
+                    mode: 'insensitive'
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                link: true,
+                questionName: true,
+                subject: true,
+                topic: true
+            }
+        });
+
+        if (!question) {
+            return res.json({
+                success: true,
+                found: false
+            });
+        }
+
+        res.json({
+            success: true,
+            found: true,
+            question
+        });
+    } catch (error) {
+        console.error('Get solution error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to search for solution'
+        });
+    }
+});
+
 // POST /api/questions/contribute - Public contribution endpoint (requires auth)
 router.post('/contribute', authenticateUser, async (req, res) => {
     try {
